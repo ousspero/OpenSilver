@@ -16,6 +16,7 @@
 #if WORKINPROGRESS
 
 using System;
+using System.Windows.Data;
 
 #if MIGRATION
 namespace System.Windows.Controls
@@ -146,6 +147,14 @@ namespace Windows.UI.Xaml.Controls
         //     in the range of frozen columns.
         [OpenSilver.NotImplemented]
         public int DisplayIndex { get; set; }
+        [OpenSilver.NotImplemented]
+        protected abstract FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem);
+        [OpenSilver.NotImplemented]
+        protected abstract object PrepareCellForEdit(FrameworkElement editingElement, RoutedEventArgs editingEventArgs);
+        [OpenSilver.NotImplemented]
+        protected abstract FrameworkElement GenerateElement(DataGridCell cell, object dataItem);
+        [OpenSilver.NotImplemented]
+        public virtual Binding ClipboardContentBinding { get; set; }
     }
 }
 #endif
