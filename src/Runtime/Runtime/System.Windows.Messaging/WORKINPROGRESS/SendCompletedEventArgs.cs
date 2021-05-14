@@ -45,6 +45,8 @@ namespace System.Windows.Messaging
         //     The response message sent to the sender of the original message.
 		[OpenSilver.NotImplemented]
         public string Response { get; }
+        [OpenSilver.NotImplemented]
+        public object UserState { get; }
 
 		[OpenSilver.NotImplemented]
         public Exception Error { get; }
