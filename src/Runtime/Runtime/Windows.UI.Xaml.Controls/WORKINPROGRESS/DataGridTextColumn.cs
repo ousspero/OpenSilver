@@ -120,6 +120,21 @@ namespace Windows.UI.Xaml.Controls
         //     The style that is used when rendering an editing element. The default is null.
         [OpenSilver.NotImplemented]
         public Style EditingElementStyle { get; set; }
+
+        protected override FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override FrameworkElement GenerateElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override object PrepareCellForEdit(FrameworkElement editingElement, RoutedEventArgs editingEventArgs)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 #endif
