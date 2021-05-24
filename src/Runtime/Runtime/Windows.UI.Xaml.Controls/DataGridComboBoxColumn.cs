@@ -35,7 +35,23 @@ namespace Windows.UI.Xaml.Controls
     /// </summary>
     public partial class DataGridComboBoxColumn : DataGridBoundColumn
     {
-  
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override object PrepareCellForEdit(FrameworkElement editingElement, RoutedEventArgs editingEventArgs)
+        {
+            throw new NotImplementedException();
+        }
 
         internal override FrameworkElement GenerateEditingElement(object childData)
         {
