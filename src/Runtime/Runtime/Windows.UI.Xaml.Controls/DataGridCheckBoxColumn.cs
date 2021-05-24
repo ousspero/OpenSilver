@@ -88,5 +88,23 @@ namespace Windows.UI.Xaml.Controls
             //base.LeaveEditionMode(dataGridCell); //this does nothing but might do something in the future
             ((FrameworkElement)dataGridCell.Content).IsEnabled = false;
         }
+
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override object PrepareCellForEdit(FrameworkElement editingElement, RoutedEventArgs editingEventArgs)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

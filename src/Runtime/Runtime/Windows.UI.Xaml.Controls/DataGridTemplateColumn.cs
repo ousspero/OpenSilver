@@ -54,9 +54,9 @@ namespace Windows.UI.Xaml.Controls
         /// </summary>
         public static readonly DependencyProperty CellTemplateProperty =
             DependencyProperty.Register(
-                nameof(CellTemplate), 
-                typeof(DataTemplate), 
-                typeof(DataGridTemplateColumn), 
+                nameof(CellTemplate),
+                typeof(DataTemplate),
+                typeof(DataGridTemplateColumn),
                 new PropertyMetadata(null, OnCellTemplateChanged));
 
         private static void OnCellTemplateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -79,9 +79,9 @@ namespace Windows.UI.Xaml.Controls
         /// </summary>
         public static readonly DependencyProperty CellEditingTemplateProperty =
             DependencyProperty.Register(
-                nameof(CellEditingTemplate), 
-                typeof(DataTemplate), 
-                typeof(DataGridTemplateColumn), 
+                nameof(CellEditingTemplate),
+                typeof(DataTemplate),
+                typeof(DataGridTemplateColumn),
                 new PropertyMetadata(null, OnCellEditingTemplateChanged));
 
         private static void OnCellEditingTemplateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -118,6 +118,24 @@ namespace Windows.UI.Xaml.Controls
                 return null;
                 //return GenerateElement(childData);
             }
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override object PrepareCellForEdit(FrameworkElement editingElement, RoutedEventArgs editingEventArgs)
+        {
+            throw new NotImplementedException();
+        }
+
+        [OpenSilver.NotImplemented]
+        protected override FrameworkElement GenerateElement(DataGridCell cell, object dataItem)
+        {
+            throw new NotImplementedException();
         }
     }
 }
