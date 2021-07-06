@@ -1149,7 +1149,7 @@ EndOperationDelegate endDelegate, SendOrPostCallback completionCallback)
                 string requestFormat = null;
 
                 string interfaceTypeName = interfaceType.Name; // default value
-                string interfaceTypeNamespace = "http://tempuri.org/"; // default value
+                string interfaceTypeNamespace = string.Empty;// default value
                 string soapAction = string.Empty;
 
 
@@ -1193,7 +1193,7 @@ EndOperationDelegate endDelegate, SendOrPostCallback completionCallback)
 
                         headers.Add("Content-Type", @"text/xml; charset=utf-8");
                         headers.Add("SOAPAction", soapAction);
-
+                        Console.WriteLine(soapAction);
                         if (!string.IsNullOrEmpty(envelopeHeaders))
                         {
                             envelopeHeaders = "<s:Header>" + envelopeHeaders + "</s:Header>";
