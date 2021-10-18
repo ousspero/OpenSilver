@@ -11,14 +11,13 @@
 *  
 \*====================================================================================*/
 
+using CSHTML5.Internal;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections;
-using CSHTML5.Internal;
 using DotNetForHtml5.Core;
-using OpenSilver.Internal.Data;
 
 #if MIGRATION
 using System.Windows.Controls;
@@ -39,11 +38,13 @@ namespace Windows.UI.Xaml.Data
     /// </summary>
     public partial class BindingExpression : BindingExpressionBase, IPropertyPathWalkerListener
     {
-        // we are not allowed to change the following in BindingExpression because it is used:
+        //we are not allowed to change the following in BindingExpression because it is used:
         //  - ParentBinding.Mode
         //  - ParentBinding.Converter
         //  - ParentBinding.ConverterLanguage
         //  - ParentBinding.ConverterParameter
+
+        #region Private Data
 
         private static readonly Type NullableType = typeof(Nullable<>);
 
@@ -53,16 +54,21 @@ namespace Windows.UI.Xaml.Data
         internal bool INTERNAL_ForceValidateOnNextSetValue = false;
         internal bool IsUpdating;
         private bool _isAttaching;
+        private readonly PropertyPathWalker propertyPathWalker;
         private IPropertyChangedListener _propertyListener;
-        private DynamicValueConverter _dynamicConverter;
+
+        private readonly string computedPath;
+        private readonly bool isDataContextBound;
         private object _bindingSource;
 
-        private readonly PropertyPathWalker _propertyPathWalker;
+        #endregion Private Data
+
+        #region Constructors
 
         internal BindingExpression(Binding binding, DependencyObject target, DependencyProperty property)
             : this(binding, property)
         {
-            Target = target;
+            this.Target = target;
         }
 
         internal BindingExpression(Binding binding, DependencyProperty property)
@@ -70,15 +76,36 @@ namespace Windows.UI.Xaml.Data
             ParentBinding = binding;
             TargetProperty = property;
 
-            bool isDataContextBound = binding.ElementName == null && binding.Source == null && binding.RelativeSource == null;
-            string path = ParentBinding.Path?.Path ?? string.Empty;
-            
-            var walker = _propertyPathWalker = new PropertyPathWalker(path, isDataContextBound);
-            if (binding.Mode != BindingMode.OneTime)
+            if (binding.ElementName == null && binding.Source == null && binding.RelativeSource == null) //this means that it is bound to current DataContext.
             {
-                walker.Listen(this);
+                this.isDataContextBound = true;
+                //we change the Binding so that when it is bound to the DataContext, we handle it the same way as 
+
+                string str = ParentBinding.Path.Path;
+                if (!string.IsNullOrWhiteSpace(str) && !((str = str.Trim()) == "."))
+                {
+                    this.computedPath = "DataContext." + str;
+                }
+                else
+                {
+                    this.computedPath = "DataContext";
+                }
             }
+            else
+            {
+                this.computedPath = this.ParentBinding.Path != null ? this.ParentBinding.Path.Path : string.Empty;
+            }
+
+            //string path = (binding.INTERNAL_ComputedPath != null ? binding.INTERNAL_ComputedPath.Path : null);
+            var walker = propertyPathWalker = new PropertyPathWalker(this.computedPath, false);
+            if (binding.Mode != BindingMode.OneTime)
+                walker.Listen(this);
+
         }
+
+        #endregion Constructors
+
+        #region Public Properties
 
         /// <summary>
         /// The binding target property of this binding expression.
@@ -101,16 +128,19 @@ namespace Windows.UI.Xaml.Data
                 if (ParentBinding.ElementName == null &&
                     ParentBinding.Source == null &&
                     ParentBinding.RelativeSource == null &&
-                    _bindingSource is FrameworkElement sourceFE)
+                    this._bindingSource is FrameworkElement sourceFE)
                 {
                     // Note: In the BindingExpression, we set the Source to the
                     // FrameworkElement and added the DataContext in the Path
                     return sourceFE.DataContext;
                 }
-
-                return _bindingSource;
+                return this._bindingSource;
             }
         }
+
+        #endregion Public Properties
+
+        #region Public Methods
 
         /// <summary>
         /// Sends the current binding target value to the binding source property in
@@ -127,21 +157,44 @@ namespace Windows.UI.Xaml.Data
             // in the remark.
             if (!IsUpdating && ParentBinding.Mode == BindingMode.TwoWay) 
             {
-                UpdateSourceObject(Target.GetValue(TargetProperty));
+                UpdateSourceObject(this.Target.GetValue(this.TargetProperty));
             }
         }
+
+        #endregion Public Methods
+
+        #region Overriden Methods
 
         internal override object GetValue(DependencyObject d, DependencyProperty dp)
         {
             object value;
 
-            if (_propertyPathWalker.IsPathBroken)
+            if (propertyPathWalker.IsPathBroken)
             {
                 //------------------------
                 // BROKEN PATH
                 //------------------------
 
-                value = UseFallbackValue();
+                value = ParentBinding.FallbackValue; // Note: the "FallbackValue" is null by default.
+
+                if (value != null)
+                {
+                    // Convert from String or other types to the destination type
+                    // (eg. binding "ScrollBar.Value" to "TextBox.Text"):
+                    value = ConvertValueIfNecessary(value, dp.PropertyType);
+                }
+                else
+                {
+                    var typeMetadata = dp.GetTypeMetaData(d.GetType());
+
+                    // Apply the default value of the dependency property:
+                    if (typeMetadata != null)
+                    {
+                        value = typeMetadata.DefaultValue;
+                    }
+                }
+
+                return value;
             }
             else
             {
@@ -149,7 +202,10 @@ namespace Windows.UI.Xaml.Data
                 // NON-BROKEN PATH
                 //------------------------
 
-                value = _propertyPathWalker.ValueInternal;
+                value = propertyPathWalker.ValueInternal;
+
+                // todo: if the value here is "Unset" (is it even possible?),
+                // should we then use "FallbackValue" instead?
 
                 if (ParentBinding.Converter != null)
                 {
@@ -158,26 +214,83 @@ namespace Windows.UI.Xaml.Data
 #else
                     value = ParentBinding.Converter.Convert(value, dp.PropertyType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
 #endif
-                    if (value == DependencyProperty.UnsetValue)
+                }
+
+                // Convert from String or other types to the destination type
+                // (eg. binding "ScrollBar.Value" to "TextBox.Text"):
+                value = ConvertValueIfNecessary(value, dp.PropertyType);
+
+                if (ParentBinding.StringFormat != null)
+                {
+                    try
                     {
-                        value = ParentBinding.FallbackValue ?? GetDefaultValue();
+                        string stringFormat = GetEffectiveStringFormat(ParentBinding.StringFormat);
+                        value = String.Format(stringFormat, value);
+                    }
+                    catch (FormatException fe)
+                    {
+                        HandleException(fe);
+                        return ParentBinding.FallbackValue;
                     }
                 }
 
+                // If null, apply the "TargetNullValue":
                 if (value == null)
                 {
-                    value = ParentBinding.TargetNullValue;
-                }
-                else
-                {
-                    value = ApplyStringFormat(value);
+                    value = ParentBinding.TargetNullValue; // Note: the "TargetNullValue" is also null by default.
                 }
 
-                value = ConvertValueIfNecessary(value, dp.PropertyType);
+                // Note: Observations from Silverlight:
+                // setting a binding between a value and a property that are
+                // of incompatible types can have two behaviors
+                // - if there is a "convention" (for example, an integer can
+                // be considered true or false depending on whether it is 0
+                // (or > 0 I don't remember) or not)
+                // then this "convention" is applied
+                // - if there is no such "convention", the DEFAULT value of
+                // the DependencyProperty is applied (and not the previous
+                // value as I would have assumed)
+                Type propertyType = dp.PropertyType;
 
-                if (value == DependencyProperty.UnsetValue)
+                // special case: we want a string as the result --> the calling
+                // method will make a toString so no need to do anything to the
+                // value.
+                if (propertyType != typeof(string))
                 {
-                    value = UseFallbackValue();
+                    if (value == null)
+                    {
+                        if (propertyType.IsValueType && 
+                            !(propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == NullableType))
+                        {
+                            value = dp.GetTypeMetaData(d.GetType()).DefaultValue;
+                        }
+                    }
+                    else
+                    {
+                        Type nonNullableMemberType = propertyType;
+                        if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == NullableType)
+                        {
+                            nonNullableMemberType = Nullable.GetUnderlyingType(propertyType); //We know the value is not null here.
+                        }
+                        if (!AreNumericTypes(nonNullableMemberType, value))
+                        {
+                            Type valueType = value.GetType();
+                            if (!(valueType == typeof(Array) && typeof(IEnumerable).IsAssignableFrom(nonNullableMemberType)))
+                            {
+                                // In the case where the value and the expected type are
+                                // numeric, we keep the value as is since JSIL doesn't
+                                // know the difference between a double and an int:
+                                // the value cannot be set to the item so we get the
+                                // DependencyProperty's default value
+                                if (!nonNullableMemberType.IsAssignableFrom(valueType))
+                                {
+                                    // todo: Add a handling of the special cases of "conventions"
+                                    // (see note "Observations from Silverlight" above).
+                                    value = dp.GetTypeMetaData(d.GetType()).DefaultValue;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -202,16 +315,16 @@ namespace Windows.UI.Xaml.Data
             if (IsAttached)
                 return;
 
-            _isAttaching = IsAttached = true;
+            this._isAttaching = IsAttached = true;
 
-            Target = d;
+            this.Target = d;
 
-            FindSource();
+            this.FindSource();
 
             // FindSource should find the source now. Otherwise, the PropertyPathNodes
             // shoud do the work (their properties will change when the source will
             // become available)
-            _propertyPathWalker.Update(_bindingSource);
+            propertyPathWalker.Update(this._bindingSource);
 
             //Listen to changes on the Target if the Binding is TwoWay:
             if (ParentBinding.Mode == BindingMode.TwoWay)
@@ -226,7 +339,7 @@ namespace Windows.UI.Xaml.Data
                 }
             }
 
-            _isAttaching = false;
+            this._isAttaching = false;
         }
 
         internal override void OnDetach(DependencyObject d, DependencyProperty dp)
@@ -234,7 +347,7 @@ namespace Windows.UI.Xaml.Data
             if (!IsAttached)
                 return;
 
-            IsAttached = false;
+            this.IsAttached = false;
 
             if (_propertyListener != null)
             {
@@ -242,18 +355,32 @@ namespace Windows.UI.Xaml.Data
                 _propertyListener = null;
             }
 
-            _propertyPathWalker.Update(null);
+            propertyPathWalker.Update(null);
 
-            Target.InheritedContextChanged -= new EventHandler(OnTargetInheritedContextChanged);
+            Target.InheritedContextChanged -= new EventHandler(this.OnTargetInheritedContextChanged);
             Target = null;
         }
 
+        #endregion Overriden Methods
+
+        #region IPropertyPathWalkerListener
+
+        void IPropertyPathWalkerListener.IsBrokenChanged() { Refresh(); }
+
         void IPropertyPathWalkerListener.ValueChanged() { Refresh(); }
+
+        #endregion IPropertyPathWalkerListener
+
+        #region Internal Properties
 
         /// <summary>
         /// The element that is the binding target object of this binding expression.
         /// </summary>
         internal DependencyObject Target { get; private set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         /// <summary>
         /// This method is used to check whether the value is Valid if needed.
@@ -263,12 +390,12 @@ namespace Windows.UI.Xaml.Data
         {
             if (ParentBinding.ValidatesOnExceptions && ParentBinding.ValidatesOnLoad)
             {
-                if (!_propertyPathWalker.IsPathBroken)
+                if (!propertyPathWalker.IsPathBroken)
                 {
                     INTERNAL_ForceValidateOnNextSetValue = false;
                     try
                     {
-                        IPropertyPathNode node = _propertyPathWalker.FinalNode;
+                        PropertyPathNode node = (PropertyPathNode)propertyPathWalker.FinalNode;
                         node.SetValue(node.Value); //we set the source property to its own value to check whether it causes an exception, in which case the value is not valid.
                     }
                     catch (Exception e) //todo: put the content of this catch in a method which will be called here and in UpdateSourceObject (OR put the whole try/catch in the method and put the Value to set as parameter).
@@ -293,10 +420,10 @@ namespace Windows.UI.Xaml.Data
 
         internal void OnSourceAvailable()
         {
-            FindSource();
-            if (_bindingSource != null)
+            this.FindSource();
+            if (this._bindingSource != null)
             {
-                _propertyPathWalker.Update(_bindingSource);
+                propertyPathWalker.Update(this._bindingSource);
             }
 
             //Target.SetValue(Property, this); // Read note below
@@ -346,77 +473,141 @@ namespace Windows.UI.Xaml.Data
             }
         }
 
-        private static bool IsValueValidForSourceUpdate(object value, Type type)
-        {
-            if (value == null)
-            {
-                return !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == NullableType);
-            }
-            
-            return type.IsAssignableFrom(value.GetType());
-        }
-
         internal void UpdateSourceObject(object value)
         {
-            if (_propertyPathWalker.IsPathBroken)
-                return;
-
-            IPropertyPathNode node = _propertyPathWalker.FinalNode;
-            bool oldIsUpdating = IsUpdating;
-
-            object convertedValue = value;
-            Type expectedType = node.Type;
-
-            try
+            if (!propertyPathWalker.IsPathBroken)
             {
-                if (expectedType != null && ParentBinding.Converter != null)
+                PropertyPathNode node = (PropertyPathNode)propertyPathWalker.FinalNode;
+                bool oldIsUpdating = IsUpdating;
+
+                try
                 {
-#if MIGRATION
-                    convertedValue = ParentBinding.Converter.ConvertBack(value, expectedType, ParentBinding.ConverterParameter, ParentBinding.ConverterCulture);
-#else
-                    convertedValue = ParentBinding.Converter.ConvertBack(value, expectedType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
-#endif
-
-                    if (convertedValue == DependencyProperty.UnsetValue)
-                        return;
-                }
-
-                if (!IsValueValidForSourceUpdate(convertedValue, expectedType))
-                {
-                    IsUpdating = true;
-
-#if MIGRATION
-                    convertedValue = DynamicConverter.Convert(convertedValue, expectedType, null, ParentBinding.ConverterCulture);
-#else
-                    convertedValue = DynamicConverter.Convert(convertedValue, expectedType, null, ParentBinding.ConverterLanguage);
-#endif
-
-                    if (convertedValue == DependencyProperty.UnsetValue)
-                        return;                    
-                }
-
-                node.SetValue(convertedValue);
-                Validation.ClearInvalid(this);
-            }
-            catch (Exception e)
-            {
-                //If we have ValidatesOnExceptions set to true, we display a popup with the error close to the element.
-                if (ParentBinding.ValidatesOnExceptions)
-                {
-                    //We get the new Error (which is the innermost exception as far as I know):
-                    Exception currentException = e;
-
-                    while (currentException.InnerException != null)
+                    Type expectedType = null;
+                    object convertedValue = value;
+                    if (ParentBinding.Converter != null)
                     {
-                        currentException = currentException.InnerException;
+                        if (node.DependencyProperty != null)
+                        {
+#if MIGRATION
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.DependencyProperty.PropertyType, ParentBinding.ConverterParameter, ParentBinding.ConverterCulture);
+#else
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.DependencyProperty.PropertyType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
+#endif
+                            expectedType = node.DependencyProperty.PropertyType;
+                        }
+                        else if (node.PropertyInfo != null)
+                        {
+#if MIGRATION
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.PropertyInfo.PropertyType, ParentBinding.ConverterParameter, ParentBinding.ConverterCulture);
+#else
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.PropertyInfo.PropertyType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
+#endif
+                            expectedType = node.PropertyInfo.PropertyType;
+                        }
+                        else if (node.FieldInfo != null)
+                        {
+#if MIGRATION
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.FieldInfo.FieldType, ParentBinding.ConverterParameter, ParentBinding.ConverterCulture);
+#else
+                            convertedValue = ParentBinding.Converter.ConvertBack(value, node.FieldInfo.FieldType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
+#endif
+                            expectedType = node.FieldInfo.FieldType;
+                        }
+                    }
+                    else //we only need to set expectedType:
+                    {
+                        if (node.DependencyProperty != null)
+                        {
+                            expectedType = node.DependencyProperty.PropertyType;
+                        }
+                        else if (node.PropertyInfo != null)
+                        {
+                            expectedType = node.PropertyInfo.PropertyType;
+                        }
+                        else if (node.FieldInfo != null)
+                        {
+                            expectedType = node.FieldInfo.FieldType;
+                        }
                     }
 
-                    Validation.MarkInvalid(this, new ValidationError(this) { Exception = currentException, ErrorContent = currentException.Message });
+                    bool typeAcceptsNullAsValue = !expectedType.IsValueType || 
+                        (expectedType.IsGenericType && expectedType.GetGenericTypeDefinition() == NullableType);
+
+                    bool isNotNullOrIsNullAccepted = ((convertedValue != null) || typeAcceptsNullAsValue);
+                    if (isNotNullOrIsNullAccepted) //Note: we put this test here to avoid making unneccessary tests but the point is that the new value is simply ignored since it doesn't fit the property (cannot set a non-nullable property to null).
+                    {
+                        //bool oldIsUpdating = IsUpdating;
+                        IsUpdating = true;
+                        Type[] AutoConvertTypes = { typeof(Int16), typeof(Int32), typeof(Int64), typeof(Double), typeof(Uri) };
+                        bool typeFound = false;
+                        if ((AutoConvertTypes.Contains(expectedType))
+                            && convertedValue is string) //todo: find a way to do this more efficiently (and maybe mode generic ?)
+                        {
+                            typeFound = true;
+                            if (expectedType == typeof(Int16))
+                            {
+                                convertedValue = Int16.Parse((string)convertedValue);
+                            }
+                            else if (expectedType == typeof(Int32))
+                            {
+                                convertedValue = Int32.Parse((string)convertedValue);
+                            }
+                            else if (expectedType == typeof(Int64))
+                            {
+                                convertedValue = Int64.Parse((string)convertedValue);
+                            }
+                            else if (expectedType == typeof(Double))
+                            {
+                                convertedValue = Double.Parse((string)convertedValue);
+                            }
+                            else if (expectedType == typeof(Uri))
+                            {
+                                convertedValue = new Uri((string)convertedValue);
+                            }
+                        }
+
+                        //todo: partially merge this "if" and the previous one.
+                        if ((!typeFound && TypeFromStringConverters.CanTypeBeConverted(expectedType))
+                            && convertedValue is string)
+                        {
+                            typeFound = true;
+                            convertedValue = TypeFromStringConverters.ConvertFromInvariantString(expectedType, (string)convertedValue);
+                        }
+
+                        if (!typeFound && convertedValue != null && (expectedType == typeof(string)))
+                        {
+                            convertedValue = convertedValue.ToString();
+                        }
+
+                        node.SetValue(convertedValue);
+                        Validation.ClearInvalid(this);
+                    }
                 }
-            }
-            finally
-            {
-                IsUpdating = oldIsUpdating;
+                catch (Exception e)
+                {
+                    //If we have ValidatesOnExceptions set to true, we display a popup with the error close to the element.
+                    if (ParentBinding.ValidatesOnExceptions)
+                    {
+                        //We get the new Error (which is the innermost exception as far as I know):
+                        Exception currentException = e;
+
+#if OPENSILVER
+                        if (true) // Note: "InnerException" is only supported in the Simulator as of July 27, 2017.
+#elif BRIDGE
+                        if (CSHTML5.Interop.IsRunningInTheSimulator) // Note: "InnerException" is only supported in the Simulator as of July 27, 2017.
+#endif
+                        {
+                            while (currentException.InnerException != null)
+                                currentException = currentException.InnerException;
+                        }
+
+                        Validation.MarkInvalid(this, new ValidationError(this) { Exception = currentException, ErrorContent = currentException.Message });
+                    }
+                }
+                finally
+                {
+                    IsUpdating = oldIsUpdating;
+                }
             }
         }
 
@@ -434,93 +625,71 @@ namespace Windows.UI.Xaml.Data
             return stringFormat;
         }
 
-        private DynamicValueConverter DynamicConverter
+        #endregion Internal Methods
+
+        #region Private Methods
+
+        private static HashSet2<Type> NumericTypes;
+
+        private static bool AreNumericTypes(Type type, object obj)
         {
-            get
+            if (NumericTypes == null)
             {
-                if (_dynamicConverter == null)
-                {
-                    _dynamicConverter = new DynamicValueConverter(ParentBinding.Mode == BindingMode.TwoWay);
-                }
-
-                return _dynamicConverter;
+                NumericTypes = new HashSet2<Type>
+                    {
+                        typeof(Byte),
+                        typeof(SByte),
+                        typeof(UInt16),
+                        typeof(UInt32),
+                        typeof(UInt64),
+                        typeof(Int16),
+                        typeof(Int32),
+                        typeof(Int64),
+                        typeof(Decimal),
+                        typeof(Double),
+                        typeof(Single),
+                        typeof(Byte?),
+                        typeof(SByte?),
+                        typeof(UInt16?),
+                        typeof(UInt32?),
+                        typeof(UInt64?),
+                        typeof(Int16?),
+                        typeof(Int32?),
+                        typeof(Int64?),
+                        typeof(Decimal?),
+                        typeof(Double?),
+                        typeof(Single?),
+                    };
             }
-        } 
-
-        private object ConvertValueIfNecessary(object value, Type targetType)
-        {
-            if (value != null)
-            {
-                Type sourceType = value.GetType();
-                if (sourceType == targetType || targetType.IsAssignableFrom(sourceType))
-                {
-                    return value;
-                }
-            }
-
-            return ConvertHelper(value, targetType);
+            if (type != null && NumericTypes.Contains(type) && obj != null && NumericTypes.Contains(obj.GetType()))
+                return true;
+            else
+                return false;
         }
 
-        private object ConvertHelper(object value, Type targetType)
+        private static object ConvertValueIfNecessary(object value, Type targetType)
         {
-            object convertedValue;
-            try
+            // Convert from String to the destination type:
+            if (value is string && targetType != typeof(string)) //eg. binding "ScrollBar.Value" to "TextBox.Text"
             {
-#if MIGRATION
-                convertedValue = DynamicConverter.Convert(value, targetType, ParentBinding.ConverterParameter, ParentBinding.ConverterCulture);
-#else
-                convertedValue = DynamicConverter.Convert(value, targetType, ParentBinding.ConverterParameter, ParentBinding.ConverterLanguage);
-#endif
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex);
-                convertedValue = DependencyProperty.UnsetValue;
+                try //this try/catch block is solely for the purpose of not raising an exception so that the GetValue finishes its thing (including handling the case where the conversion cannot be done).
+                {
+                    value = TypeFromStringConverters.ConvertFromInvariantString(targetType, (string)value);
+                }
+                catch (Exception ex)
+                {
+                    HandleException(ex);
+                }
             }
 
-            return convertedValue;
-        }
-
-        private object UseFallbackValue()
-        {
-            object value = DependencyProperty.UnsetValue;
-
-            if (ParentBinding.FallbackValue != null)
+            // Some hard-coded conversions: //todo: generalize this system by implementing "TypeConverter" and "TypeConverterAttribute"
+            if (targetType == typeof(Color) && value is SolidColorBrush scb) //eg. binding "Border.Background" to "DropShadowEffect.Color"
             {
-                value = ConvertValueIfNecessary(ParentBinding.FallbackValue, TargetProperty.PropertyType);
-            }
-            
-            if (value == DependencyProperty.UnsetValue)
-            {
-                value = GetDefaultValue();
+                value = scb.Color;
             }
 
             return value;
         }
-
-        private object ApplyStringFormat(object value)
-        {
-            object result = value;
-
-            string format = ParentBinding.StringFormat;
-            if (format != null)
-            {
-                try
-                {
-                    string stringFormat = GetEffectiveStringFormat(format);
-                    result = string.Format(stringFormat, value);
-                }
-                catch (FormatException fe)
-                {
-                    HandleException(fe);
-                    result = UseFallbackValue();
-                }
-            }
-
-            return result;
-        }
-
-        private object GetDefaultValue() => TargetProperty.GetMetadata(Target.GetType()).DefaultValue;
 
         private static void HandleException(Exception ex)
         {
@@ -536,77 +705,78 @@ namespace Windows.UI.Xaml.Data
 
         private void OnTargetInheritedContextChanged(object sender, EventArgs e)
         {
-            Target.InheritedContextChanged -= new EventHandler(OnTargetInheritedContextChanged);
-            OnSourceAvailable();
+            this.Target.InheritedContextChanged -= new EventHandler(this.OnTargetInheritedContextChanged);
+            this.OnSourceAvailable();
         }
 
         private void FindSource()
         {
-            if (ParentBinding.Source != null)
+            if (this.isDataContextBound)
             {
-                _bindingSource = ParentBinding.Source;
-            }
-            else if (ParentBinding.ElementName != null)
-            {
-                _bindingSource = (Target as FrameworkElement)?.FindName(ParentBinding.ElementName);
-            }
-            else if (ParentBinding.RelativeSource != null)
-            {
-                _bindingSource = FindRelativeSource(this);
-            }
-            else
-            {
-                // DataContext
-                if (Target is FrameworkElement targetFE)
+                if (this.Target is FrameworkElement targetFE)
                 {
                     DependencyObject contextElement = targetFE;
 
                     // special cases:
                     // 1. if target property is DataContext, use the target's parent.
                     //      This enables <X DataContext="{Binding...}"/>
-                    if (TargetProperty == FrameworkElement.DataContextProperty)
+                    if (this.TargetProperty == FrameworkElement.DataContextProperty)
                     {
-                        contextElement = targetFE.Parent ?? VisualTreeHelper.GetParent(targetFE);
+                        contextElement = targetFE.Parent;
                     }
-
-                    _bindingSource = contextElement;
+                    this._bindingSource = contextElement;
                 }
                 else
                 {
-                    Target.InheritedContextChanged += new EventHandler(OnTargetInheritedContextChanged);
-                    _bindingSource = Target.InheritedParent;
+                    this.Target.InheritedContextChanged += new EventHandler(this.OnTargetInheritedContextChanged);
+                    this._bindingSource = this.Target.InheritedParent;
+                }
+            }
+            else if (ParentBinding.Source != null)
+            {
+                this._bindingSource = ParentBinding.Source;
+            }
+            else if (ParentBinding.ElementName != null)
+            {
+                // we should not arrive here
+                // todo: fix this so that an ElementName can be set programmatically
+                if (Target is FrameworkElement targetFE)
+                {
+                    this._bindingSource = targetFE.FindName(ParentBinding.ElementName);
+                }
+                else
+                {
+                    this._bindingSource = null;
+                }
+            }
+            else if (ParentBinding.RelativeSource != null)
+            {
+                var relativeSource = ParentBinding.RelativeSource;
+                switch (relativeSource.Mode)
+                {
+                    case RelativeSourceMode.Self:
+                        this._bindingSource = Target;
+                        break;
+                    case RelativeSourceMode.TemplatedParent:
+                        if (ParentBinding.TemplateOwner != null)
+                        {
+                            this._bindingSource = ParentBinding.TemplateOwner.TemplateOwner;
+                        }
+                        else
+                        {
+                            // todo: find out why we enter here in Client_TUI.
+                            Debug.WriteLine("ERROR: ParentBinding.TemplateOwner is null.");
+                            this._bindingSource = null;
+                        }
+                        break;
+                    case RelativeSourceMode.FindAncestor:
+                        this._bindingSource = FindAncestor(Target, relativeSource);
+                        break;
                 }
             }
         }
-        
-        private static object FindRelativeSource(BindingExpression expr)
-        {
-            RelativeSource relativeSource = expr.ParentBinding.RelativeSource;
-            switch (relativeSource.Mode)
-            {
-                case RelativeSourceMode.Self:
-                    return expr.Target;
 
-                case RelativeSourceMode.TemplatedParent:
-                    if (expr.ParentBinding.TemplateOwner != null)
-                    {
-                        return expr.ParentBinding.TemplateOwner.TemplateOwner;
-                    }
-                    
-                    // todo: find out why we enter here in Client_TUI.
-                    Debug.WriteLine("ERROR: ParentBinding.TemplateOwner is null.");
-                    return null;
-
-                case RelativeSourceMode.FindAncestor:
-                    return FindAncestor(expr.Target, relativeSource);
-
-                case RelativeSourceMode.None:
-                default:
-                    return null;
-            }
-        }
-
-        private static object FindAncestor(DependencyObject target, RelativeSource relativeSource)
+        private object FindAncestor(DependencyObject target, RelativeSource relativeSource)
         {
             // todo: support bindings in style setters and then remove the following test.
             // To reproduce the issue:
@@ -646,17 +816,17 @@ namespace Windows.UI.Xaml.Data
             try
             {
                 if (!IsUpdating && ParentBinding.UpdateSourceTrigger != UpdateSourceTrigger.Explicit)
-                    UpdateSourceObject(Target.GetValue(TargetProperty));
+                    UpdateSourceObject(this.Target.GetValue(this.TargetProperty));
             }
             catch (Exception err)
             {
-                Console.WriteLine($"[BINDING] UpdateSource: {err}");
+                Console.WriteLine("[BINDING] UpdateSource: " + err.ToString());
             }
         }
 
         private void Refresh()
         {
-            if (_isAttaching)
+            if (this._isAttaching)
                 return;
 
             if (IsAttached)
@@ -668,5 +838,7 @@ namespace Windows.UI.Xaml.Data
                 IsUpdating = oldIsUpdating;
             }
         }
+
+        #endregion Private Methods
     }
 }

@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,12 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 #if MIGRATION
 namespace System.Windows.Media
@@ -21,41 +27,29 @@ namespace Windows.UI.Xaml.Media
 {
     public sealed partial class TransformCollection : PresentationFrameworkCollection<Transform>
     {
-        private TransformGroup _parentTransform;
-
-        public TransformCollection() : base(false)
-        {
-        }
-
         internal override void AddOverride(Transform value)
         {
-            this.SubscribeToChangedEvent(value);
-
             this.AddDependencyObjectInternal(value);
         }
 
         internal override void ClearOverride()
         {
-            foreach (Transform t in this)
-            {
-                this.UnsubscribeToChangedEvent(t);
-            }
-
             this.ClearDependencyObjectInternal();
         }
 
         internal override void InsertOverride(int index, Transform value)
         {
-            this.SubscribeToChangedEvent(value);
-
             this.InsertDependencyObjectInternal(index, value);
         }
 
         internal override void RemoveAtOverride(int index)
         {
-            this.UnsubscribeToChangedEvent(this[index]);
-
             this.RemoveAtDependencyObjectInternal(index);
+        }
+
+        internal override bool RemoveOverride(Transform value)
+        {
+            return this.RemoveDependencyObjectInternal(value);
         }
 
         internal override Transform GetItemOverride(int index)
@@ -65,30 +59,7 @@ namespace Windows.UI.Xaml.Media
 
         internal override void SetItemOverride(int index, Transform value)
         {
-            this.UnsubscribeToChangedEvent(this[index]);
-            this.SubscribeToChangedEvent(value);
-
             this.SetItemDependencyObjectInternal(index, value);
-        }
-
-        internal void SetParentTransform(TransformGroup transform)
-        {
-            this._parentTransform = transform;
-        }
-
-        private void SubscribeToChangedEvent(Transform transform)
-        {
-            transform.Changed += new EventHandler(this.TransformChanged);
-        }
-
-        private void UnsubscribeToChangedEvent(Transform transform)
-        {
-            transform.Changed -= new EventHandler(this.TransformChanged);
-        }
-
-        private void TransformChanged(object sender, EventArgs e)
-        {
-            this._parentTransform?.RaiseTransformChanged();
         }
     }
 }

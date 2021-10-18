@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,14 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 #if MIGRATION
 namespace System.Windows
@@ -20,18 +28,29 @@ namespace Windows.UI.Xaml
 #endif
 {
     /// <summary>
-    /// Represents a collection of objects that inherit from <see cref="SetterBase"/>.
+    /// Represents a collection of objects that inherit from System.Windows.SetterBase.
     /// </summary>
     public sealed partial class SetterBaseCollection : PresentationFrameworkCollection<SetterBase>
     {
+        #region Data
+
         private bool _sealed;
 
+        #endregion Data
+
+        #region Constructor
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="SetterBaseCollection"/> class.
+        /// Initializes a new instance of the System.Windows.SetterBaseCollection class.
         /// </summary>
-        public SetterBaseCollection() : base(false)
+        public SetterBaseCollection()
         {
+
         }
+
+        #endregion
+
+        #region Public Properties
 
         /// <summary>
         ///     Returns the sealed state of this object.  If true, any attempt
@@ -45,6 +64,10 @@ namespace Windows.UI.Xaml
             }
         }
 
+        #endregion
+
+        #region Overriden Methods
+
         // Note: Even if SetterBase derives from DependencyObject, we don't use
         // the methods that are supposed to handle collections of DependencyObject
         // as we don't want the inheritance context to be propagated to Setters.
@@ -52,6 +75,7 @@ namespace Windows.UI.Xaml
         internal override void AddOverride(SetterBase value)
         {
             this.CheckSealed();
+            this.SetterBaseValidation(value);
             this.AddInternal(value);
         }
 
@@ -64,6 +88,7 @@ namespace Windows.UI.Xaml
         internal override void InsertOverride(int index, SetterBase value)
         {
             this.CheckSealed();
+            this.SetterBaseValidation(value);
             this.InsertInternal(index, value);
         }
 
@@ -71,6 +96,13 @@ namespace Windows.UI.Xaml
         {
             this.CheckSealed();
             this.RemoveAtInternal(index);
+        }
+
+        internal override bool RemoveOverride(SetterBase value)
+        {
+            this.CheckSealed();
+            this.SetterBaseValidation(value);
+            return this.RemoveInternal(value);
         }
 
         internal override SetterBase GetItemOverride(int index)
@@ -81,8 +113,13 @@ namespace Windows.UI.Xaml
         internal override void SetItemOverride(int index, SetterBase value)
         {
             this.CheckSealed();
+            this.SetterBaseValidation(value);
             this.SetItemInternal(index, value);
         }
+
+        #endregion
+
+        #region Internal Methods
 
         internal void Seal()
         {
@@ -99,8 +136,18 @@ namespace Windows.UI.Xaml
         {
             if (_sealed)
             {
-                throw new InvalidOperationException(string.Format("Cannot modify a '{0}' after it is sealed.", typeof(SetterBaseCollection).Name));
+                throw new InvalidOperationException(string.Format("Cannot modify a '{0}' after it is sealed.", "SetterBaseCollection"));
             }
         }
+
+        private void SetterBaseValidation(SetterBase setterBase)
+        {
+            if (setterBase == null)
+            {
+                throw new ArgumentNullException("setterBase");
+            }
+        }
+
+        #endregion
     }
 }

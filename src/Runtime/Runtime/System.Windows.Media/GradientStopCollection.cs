@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,9 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
 
 #if MIGRATION
 namespace System.Windows.Media
@@ -27,10 +30,6 @@ namespace Windows.UI.Xaml.Media
     {
         private Brush _parentBrush;
 
-        public GradientStopCollection() : base(false)
-        {
-        }
-
         internal void SetParentBrush(Brush brush)
         {
             if (this._parentBrush != brush)
@@ -45,6 +44,10 @@ namespace Windows.UI.Xaml.Media
 
         internal override void AddOverride(GradientStop gradientStop)
         {
+            if (gradientStop == null)
+            {
+                throw new ArgumentNullException("gradientStop");
+            }
             this.AddDependencyObjectInternal(gradientStop);
             gradientStop.INTERNAL_ParentBrush = this._parentBrush;
         }
@@ -58,20 +61,37 @@ namespace Windows.UI.Xaml.Media
                     gs.INTERNAL_ParentBrush = null;
                 }
             }
-
             this.ClearDependencyObjectInternal();
         }
 
         internal override void RemoveAtOverride(int index)
         {
+            if (index < 0 || index >= this.CountInternal)
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
             this.GetItemInternal(index).INTERNAL_ParentBrush = null;
             this.RemoveAtDependencyObjectInternal(index);
         }
 
         internal override void InsertOverride(int index, GradientStop gradientStop)
         {
+            if (gradientStop == null)
+            {
+                throw new ArgumentNullException("gradientStop");
+            }
             gradientStop.INTERNAL_ParentBrush = this._parentBrush;
             this.InsertDependencyObjectInternal(index, gradientStop);
+        }
+
+        internal override bool RemoveOverride(GradientStop gradientStop)
+        {
+            if (this.RemoveDependencyObjectInternal(gradientStop))
+            {
+                gradientStop.INTERNAL_ParentBrush = null;
+                return true;
+            }
+            return false;
         }
 
         internal override GradientStop GetItemOverride(int index)

@@ -38,30 +38,6 @@
     <DocumentationFile>$(BinFolder)\Migration\CSHTML5.Migration.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\ContentPropertyAttribute.cs">
-      <Link>System.Windows.Markup\ContentPropertyAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\ContentWrapperAttribute.cs">
-      <Link>System.Windows.Markup\ContentWrapperAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\IProvideValueTarget.cs">
-      <Link>System.Windows.Markup\IProvideValueTarget.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\MarkupExtension.cs">
-      <Link>System.Windows.Markup\MarkupExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\NullExtension.cs">
-      <Link>System.Windows.Markup\NullExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\XmlnsDefinitionAttribute.cs">
-      <Link>System.Windows.Markup\XmlnsDefinitionAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Windows.Markup\XmlnsPrefixAttribute.cs">
-      <Link>System.Windows.Markup\XmlnsPrefixAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\OpenSilver.Xaml\System.Xaml\IMarkupExtension.cs">
-      <Link>System.Xaml\IMarkupExtension.cs</Link>
-    </Compile>
     <Compile Include="Core\Main\DescendentsWalker.cs" />
     <Compile Include="Core\Main\DescendentsWalkerBase.cs" />
     <Compile Include="Core\Main\EmptyEnumerator.cs" />
@@ -71,12 +47,9 @@
     <Compile Include="Core\Other\INTERNAL_DispatcherQueueHandler.cs" />
     <Compile Include="OpenSilver\Internal\Controls\ITextBoxViewHost.cs" />
     <Compile Include="OpenSilver\Internal\ApplicationLifetimeObjectsCollection.cs" />
-    <Compile Include="OpenSilver\Internal\Data\DefaultValueConverter.cs" />
-    <Compile Include="OpenSilver\Internal\Data\DynamicValueConverter.cs" />
     <Compile Include="OpenSilver\Internal\ObjectExtensions.cs" />
     <Compile Include="OpenSilver\Internal\Parsers.cs" />
     <Compile Include="OpenSilver\Internal\TokenizerHelper.cs" />
-    <Compile Include="OpenSilver\Internal\Xaml\RuntimeHelpers.cs" />
     <Compile Include="OpenSilver\NotImplementedAttribute.cs" />
     <Compile Include="PagedCollectionView\CollectionViewGroupInternal.cs" />
     <Compile Include="PagedCollectionView\CollectionViewGroupRoot.cs" />
@@ -104,8 +77,6 @@
     <Compile Include="System.ComponentModel\ISupportInitialize.cs" />
     <Compile Include="System.ComponentModel\ListSortDirection.cs" />
     <Compile Include="System.ComponentModel\ReadOnlyAttribute.cs" />
-    <Compile Include="System.ComponentModel\ReflectedPropertyCollection.cs" />
-    <Compile Include="System.ComponentModel\ReflectedPropertyData.cs" />
     <Compile Include="System.ComponentModel\SortDescription.cs" />
     <Compile Include="System.ComponentModel\SortDescriptionCollection.cs" />
     <Compile Include="System.ComponentModel\TypeConverterHelper.cs" />
@@ -121,7 +92,6 @@
     <Compile Include="System.ServiceModel.Channels\WORKINPROGRESS\IHttpCookieContainerManager.cs" />
     <Compile Include="System.ServiceModel\CommunicationException.cs" />
     <Compile Include="System.Windows.Browser\EventSubscriber.cs" />
-    <Compile Include="System.Windows.Browser\HttpUtility.CSHTML5.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\BrowserInformation.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\HtmlEventArgs.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\HtmlPopupWindowOptions.cs" />
@@ -134,7 +104,6 @@
     <Compile Include="System.Windows.Controls\WORKINPROGRESS\TransitioningContentControl.cs" />
     <Compile Include="System.Windows.Controls\WORKINPROGRESS\TreeViewConnectingLines.cs" />
     <Compile Include="System.Windows.Controls\WORKINPROGRESS\TreeViewExtensions.cs" />
-    <Compile Include="System.Windows.Data\DependencyPropertyNode.cs" />
     <Compile Include="System.Windows.Interactivity\EventTrigger.cs" />
     <Compile Include="System.Windows.Interactivity\InvokeCommandAction.cs" />
     <Compile Include="System.Windows.Interactivity\TriggerAction.cs" />
@@ -143,8 +112,8 @@
     <Compile Include="System.Windows.Interactivity\TriggerCollection.cs" />
     <Compile Include="System.Windows.Interactivity\WORKINPROGRESS\TriggerAction.cs" />
     <Compile Include="System.Windows.Interactivity\WORKINPROGRESS\TriggerAction_1.cs" />
-    <Compile Include="System.Windows.Interop\NavigationStateChangedEventArgs.cs" />
     <Compile Include="System.Windows.Markup\WORKINPROGRESS\XmlLanguage.cs" />
+    <Compile Include="System.Windows.Markup\XmlnsPrefixAttribute.cs" />
     <Compile Include="System.Windows.Media\ImageSourceConverter.cs" />
     <Compile Include="System.Windows.Media\PointCollectionConverter.cs" />
     <Compile Include="System.Windows.Media\TransformConverter.cs" />
@@ -158,6 +127,7 @@
     <Compile Include="System.Windows\RectConverter.cs" />
     <Compile Include="System.Windows\RoutedPropertyChangingEventArgs.cs" />
     <Compile Include="System.Windows\TextDecorationCollectionConverter.cs" />
+    <Compile Include="System.Xaml\IMarkupExtension.cs" />
     <Compile Include="System.Xml\WORKINPROGRESS\XmlSerializer.cs" />
     <Compile Include="System\TypeExtensions.cs" />
     <Compile Include="System.Windows\Disposable.cs" />
@@ -476,6 +446,7 @@
     <Compile Include="System.Windows.Browser\HtmlDocument.cs" />
     <Compile Include="System.Windows.Browser\HtmlPage.cs" />
     <Compile Include="System.Windows.Browser\HtmlWindow.cs" />
+    <Compile Include="System.Windows.Browser\HttpUtility.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\HtmlElement.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\HtmlObject.cs" />
     <Compile Include="System.Windows.Browser\WORKINPROGRESS\ScriptObject.cs" />
@@ -506,10 +477,16 @@
     <Compile Include="System.Windows.Interactivity\BehaviorCollection.cs" />
     <Compile Include="System.Windows.Interactivity\IAttachedObject.cs" />
     <Compile Include="System.Windows.Interactivity\Interaction.cs" />
+    <Compile Include="System.Windows.Markup\ContentPropertyAttribute.cs" />
+    <Compile Include="System.Windows.Markup\ContentWrapperAttribute.cs" />
+    <Compile Include="System.Windows.Markup\IProvideValueTarget.cs" />
+    <Compile Include="System.Windows.Markup\MarkupExtension.cs" />
     <Compile Include="System.Windows.Markup\MethodToTranslateXamlValueToCSharpAttribute.cs" />
+    <Compile Include="System.Windows.Markup\NullExtension.cs" />
     <Compile Include="System.Windows.Markup\StaticResourceExtension.cs" />
     <Compile Include="System.Windows.Markup\ThemeResourceExtension.cs" />
     <Compile Include="System.Windows.Markup\XamlParseException.cs" />
+    <Compile Include="System.Windows.Markup\XmlnsDefinitionAttribute.cs" />
     <Compile Include="System.Windows.Media.Effects\DropShadowEffect.cs" />
     <Compile Include="System.Windows.Media.Effects\Effect.cs" />
     <Compile Include="System.Windows.Navigation\JournalOwnership.cs" />
@@ -1007,7 +984,6 @@
     <Compile Include="System.Windows.Media\Color.cs" />
     <Compile Include="System.Windows.Media\ColorConverter.cs" />
     <Compile Include="System.Windows.Media\Colors.cs" />
-    <Compile Include="Windows.UI.Input\PointerPointProperties.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bridge.json" />

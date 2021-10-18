@@ -26,6 +26,10 @@ namespace Windows.UI.Xaml.Controls
 {
     public sealed class ItemCollection : PresentationFrameworkCollection<object>, INotifyCollectionChanged
     {
+        #region Data
+
+        private SimpleMonitor _monitor = new SimpleMonitor();
+
         private bool _isUsingItemsSource;
         private IEnumerable _itemsSource; // base collection
 
@@ -34,10 +38,18 @@ namespace Windows.UI.Xaml.Controls
 
         private FrameworkElement _modelParent;
 
-        internal ItemCollection(FrameworkElement parent) : base(true)
+        #endregion Data
+
+        #region Constructor
+
+        internal ItemCollection(FrameworkElement parent)
         {
             this._modelParent = parent;
         }
+
+        #endregion Constructor
+
+        #region Overriden Methods
 
         internal override bool IsFixedSizeImpl
         {
@@ -51,51 +63,73 @@ namespace Windows.UI.Xaml.Controls
 
         internal override void AddOverride(object value)
         {
+            this.CheckReentrancy();
             if (this.IsUsingItemsSource)
             {
                 throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
             }
-
             this.SetModelParent(value);
             this.AddInternal(value);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, this.CountInternal - 1));
         }
 
         internal override void ClearOverride()
         {
+            this.CheckReentrancy();
             if (this.IsUsingItemsSource)
             {
                 throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
             }
-
             foreach (var item in this)
             {
                 this.ClearModelParent(item);
             }
-            
             this.ClearInternal();
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
         internal override void InsertOverride(int index, object value)
         {
+            this.CheckReentrancy();
             if (this.IsUsingItemsSource)
             {
                 throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
             }
-
             this.SetModelParent(value);
             this.InsertInternal(index, value);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, index));
         }
 
         internal override void RemoveAtOverride(int index)
         {
+            this.CheckReentrancy();
             if (this.IsUsingItemsSource)
             {
                 throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
             }
-
             object removedItem = this.GetItemInternal(index);
             this.ClearModelParent(removedItem);
             this.RemoveAtInternal(index);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+        }
+
+        internal override bool RemoveOverride(object value)
+        {
+            this.CheckReentrancy();
+            if (this.IsUsingItemsSource)
+            {
+                throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
+            }
+            int index = this.IndexOf(value);
+            if (index > -1)
+            {
+                object oldItem = this.GetItemInternal(index);
+                this.ClearModelParent(oldItem);
+                this.RemoveAtInternal(index);
+                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, oldItem, index));
+                return true;
+            }
+            return false;
         }
 
         internal override object GetItemOverride(int index)
@@ -104,21 +138,21 @@ namespace Windows.UI.Xaml.Controls
             {
                 return this.SourceList[index];
             }
-
             return this.GetItemInternal(index);
         }
 
         internal override void SetItemOverride(int index, object value)
         {
+            this.CheckReentrancy();
             if (this.IsUsingItemsSource)
             {
                 throw new InvalidOperationException("Operation is not valid while ItemsSource is in use. Access and modify elements with ItemsControl.ItemsSource instead.");
             }
-
             object originalItem = this.GetItemInternal(index);
             this.ClearModelParent(originalItem);
             this.SetModelParent(value);
             this.SetItemInternal(index, value);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, originalItem, index));
         }
 
         internal override bool ContainsImpl(object value)
@@ -127,7 +161,6 @@ namespace Windows.UI.Xaml.Controls
             {
                 return this.SourceList.Contains(value);
             }
-
             return base.ContainsImpl(value);
         }
 
@@ -137,7 +170,6 @@ namespace Windows.UI.Xaml.Controls
             {
                 return this.SourceList.IndexOf(value);
             }
-
             return base.IndexOfImpl(value);
         }
 
@@ -147,7 +179,6 @@ namespace Windows.UI.Xaml.Controls
             {
                 return this.GetEnumeratorPrivateItemsSourceOnly();
             }
-
             return base.GetEnumeratorImpl();
         }
 
@@ -160,17 +191,63 @@ namespace Windows.UI.Xaml.Controls
             }
         }
 
-        public new event NotifyCollectionChangedEventHandler CollectionChanged
+        #endregion Overriden Methods
+
+        #region INotifyCollectionChanged
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+        private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
-            add
+            if (this.CollectionChanged != null)
             {
-                base.CollectionChanged += value;
-            }
-            remove
-            {
-                base.CollectionChanged -= value;
+                using (this.BlockReentrancy())
+                {
+                    this.CollectionChanged(this, e);
+                }
             }
         }
+
+        /// <summary>
+        /// Disallow reentrant attempts to change this collection. E.g. a event handler
+        /// of the CollectionChanged event is not allowed to make changes to this collection.
+        /// </summary>
+        /// <remarks>
+        /// typical usage is to wrap e.g. a OnCollectionChanged call with a using() scope:
+        /// <code>
+        ///         using (BlockReentrancy())
+        ///         {
+        ///             CollectionChanged(this, new NotifyCollectionChangedEventArgs(action, item, index));
+        ///         }
+        /// </code>
+        /// </remarks>
+        private IDisposable BlockReentrancy()
+        {
+            _monitor.Enter();
+            return _monitor;
+        }
+
+        /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
+        /// <exception cref="InvalidOperationException"> raised when changing the collection
+        /// while another collection change is still being notified to other listeners </exception>
+        private void CheckReentrancy()
+        {
+            if (_monitor.Busy)
+            {
+                // we can allow changes if there's only one listener - the problem
+                // only arises if reentrant changes make the original event args
+                // invalid for later listeners.  This keeps existing code working
+                // (e.g. Selector.SelectedItems).
+                if ((CollectionChanged != null) && (CollectionChanged.GetInvocationList().Length > 1))
+                    throw new InvalidOperationException("RowDefinitionCollection Reentrancy not allowed");
+            }
+        }
+
+        #endregion INotifyCollectionChanged
+
+        #region Internal API
+
+        #region Internal Properties
 
         internal IEnumerator LogicalChildren
         {
@@ -209,7 +286,6 @@ namespace Windows.UI.Xaml.Controls
                 {
                     return this._listWrapper;
                 }
-
                 return (IList)this._itemsSource;
             }
         }
@@ -229,6 +305,10 @@ namespace Windows.UI.Xaml.Controls
             }
         }
 
+        #endregion Internal Properties
+
+        #region Internal Methods
+
         internal void SetItemsSource(IEnumerable value)
         {
             if (!this.IsUsingItemsSource && this.CountInternal != 0)
@@ -245,7 +325,7 @@ namespace Windows.UI.Xaml.Controls
             
             this.InitializeSourceList(value);
 
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
 
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
@@ -262,7 +342,7 @@ namespace Windows.UI.Xaml.Controls
                 this._isUsingItemsSource = false;
                 this._isUsingListWrapper = false;
 
-                this.UpdateCountProperty();
+                this.UpdateCountProperty(this.CountInternal);
 
                 this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
             }
@@ -340,7 +420,7 @@ namespace Windows.UI.Xaml.Controls
                 }
             }
 
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
 
             // Raise collection changed
             this.OnCollectionChanged(e);
@@ -380,6 +460,29 @@ namespace Windows.UI.Xaml.Controls
             }
         }
 
+        #endregion Internal Methods
+
+        #endregion Internal API
+
+        #region Private classes
+
+        private class SimpleMonitor : IDisposable
+        {
+            public void Enter()
+            {
+                ++_busyCount;
+            }
+
+            public void Dispose()
+            {
+                --_busyCount;
+            }
+
+            public bool Busy { get { return _busyCount > 0; } }
+
+            int _busyCount;
+        }
+
         private class EnumerableWrapper : List<object>
         {
             private IEnumerable _sourceCollection;
@@ -406,5 +509,7 @@ namespace Windows.UI.Xaml.Controls
                 }
             }
         }
+
+        #endregion Private classes
     }
 }

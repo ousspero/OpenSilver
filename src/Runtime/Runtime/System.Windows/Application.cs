@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 using System.Windows.Resources;
 using System.IO;
 using System.Text;
-using System.Windows;
 using CSHTML5;
 using CSHTML5.Internal;
 using DotNetForHtml5.Core;
@@ -26,7 +25,6 @@ using OpenSilver.Internal;
 
 #if MIGRATION
 using System.ApplicationModel.Activation;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 #else
@@ -59,7 +57,7 @@ namespace Windows.UI.Xaml
         /// <summary>
         /// Gets the Application object for the current application.
         /// </summary>
-        public static Application Current { get; private set; }
+        public static Application Current { get; set; }
 
         internal INTERNAL_XamlResourcesHandler XamlResourcesHandler { get; } = new INTERNAL_XamlResourcesHandler();
 
@@ -67,12 +65,6 @@ namespace Windows.UI.Xaml
       
         public Application()
         {
-            // Keep a reference to the app:
-            Application.Current = this;
-            
-            // Initialize Deployment
-            _ = Deployment.Current;
-
             // In case of a redirection from Microsoft AAD, when running in the Simulator, we re-instantiate the application. We need to reload the JavaScript files because they are no longer in the HTML DOM due to the AAD redirection:
             INTERNAL_InteropImplementation.ResetLoadedFilesDictionaries();
 
@@ -110,6 +102,9 @@ namespace Windows.UI.Xaml
                 RedirectAlertToMessageBox_SimulatorOnly();
             }
 #endif
+
+            // Keep a reference to the app:
+            Application.Current = this;
 
             // Get default font-family from css
             INTERNAL_FontsHelper.DefaultCssFontFamily = Convert.ToString(CSHTML5.Interop.ExecuteJavaScript("window.getComputedStyle(document.getElementsByTagName('body')[0]).getPropertyValue(\"font-family\")"));

@@ -110,8 +110,6 @@ namespace Windows.UI.Xaml.Controls
 
             RefreshTodayHighlight(IsTodayHighlighted);
 
-            // Enable click event
-            CSHTML5.Interop.ExecuteJavaScript(@"$0.calendarContainer.style.pointerEvents = 'auto'", _flatpickrInstance);
             // Hide the input area:
             CSHTML5.Interop.ExecuteJavaScript(@"$0.style.display = 'none'", div);
         }

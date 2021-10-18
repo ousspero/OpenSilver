@@ -295,22 +295,6 @@ public static class INTERNAL_BridgeWorkarounds
         return true;
     }
 
-    public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-    {
-        if (propertyInfo == null)
-        {
-            throw new ArgumentNullException(nameof(propertyInfo));
-        }
-
-        MethodInfo getMethod = propertyInfo.GetMethod;
-        if (getMethod != null && getMethod.IsPublic)
-        {
-            return getMethod;
-        }
-        
-        return null;
-    }
-
     public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
     {
         if (propertyInfo == null)
@@ -318,13 +302,7 @@ public static class INTERNAL_BridgeWorkarounds
             throw new ArgumentNullException(nameof(propertyInfo));
         }
 
-        MethodInfo setMethod = propertyInfo.SetMethod;
-        if (setMethod != null && setMethod.IsPublic)
-        {
-            return setMethod;
-        }
-
-        return null;
+        return propertyInfo.SetMethod;
     }
 }
 #endif

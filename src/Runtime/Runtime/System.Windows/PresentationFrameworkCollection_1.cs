@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,11 +12,12 @@
 *  
 \*====================================================================================*/
 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
-using System.Collections.Specialized;
+
 
 #if MIGRATION
 namespace System.Windows
@@ -29,89 +31,49 @@ namespace Windows.UI.Xaml
     /// <typeparam name="T">Type constraint for type safety of the constrained collection implementation.</typeparam>
     public abstract partial class PresentationFrameworkCollection<T> : DependencyObject, IList<T>, ICollection<T>, IEnumerable<T>, IList, ICollection, IEnumerable
     {
+        #region Data
         private readonly List<T> _collection;
-        private readonly bool _processCollectionChanged;
-        private readonly SimpleMonitor _monitor = new SimpleMonitor();
 
-        internal PresentationFrameworkCollection(bool processCollectionChanged)
+        public static readonly DependencyProperty CountProperty = 
+            DependencyProperty.Register("Count",
+                                        typeof(int),
+                                        typeof(PresentationFrameworkCollection<T>),
+                                        new PropertyMetadata(0));
+        #endregion
+
+        #region Constructor
+
+        internal PresentationFrameworkCollection()
         {
-            this._processCollectionChanged = processCollectionChanged;
             this._collection = new List<T>();
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
-        internal PresentationFrameworkCollection(int capacity, bool processCollectionChanged)
+        internal PresentationFrameworkCollection(int capacity)
         {
-            this._processCollectionChanged = processCollectionChanged;
             this._collection = new List<T>(capacity);
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
-        internal PresentationFrameworkCollection(IEnumerable<T> source, bool processCollectionChanged)
+        internal PresentationFrameworkCollection(IEnumerable<T> source)
         {
-            this._processCollectionChanged = processCollectionChanged;
             this._collection = new List<T>(source);
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
-        /// <summary>
-        /// Identifies the <see cref="Count"/> dependency property.
-        /// </summary>
-        public static readonly DependencyProperty CountProperty =
-            DependencyProperty.Register(
-                nameof(Count),
-                typeof(int),
-                typeof(PresentationFrameworkCollection<T>),
-                new PropertyMetadata(0));
+        #endregion
 
-        /// <summary>
-        /// Gets the number of elements contained in the <see cref="PresentationFrameworkCollection{T}"/>.
-        /// </summary>
+        #region Public Properties
+
         public int Count
         {
             get { return (int)this.GetValue(CountProperty); }
         }
 
-        /// <summary>
-        /// Gets or sets the element at the specified index.
-        /// </summary>
-        /// <param name="index">
-        /// The zero-based index of the element to get or set.
-        /// </param>
-        /// <returns>
-        /// The element at the specified index.
-        /// </returns>
         public T this[int index]
         {
-            get 
-            {
-                if (index < 0 || index >= this.CountInternal)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-
-                return this.GetItemOverride(index); 
-            }
-            set 
-            {
-                this.CheckReentrancy();
-
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                if (index < 0 || index >= this.CountInternal)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-
-                T originalItem = this[index];
-
-                this.SetItemOverride(index, value);
-
-                this.OnCollectionChanged(NotifyCollectionChangedAction.Replace, originalItem, value, index);
-            }
+            get { return this.GetItemOverride(index); }
+            set { this.SetItemOverride(index, value); }
         }
 
         /// <summary>
@@ -169,7 +131,9 @@ namespace Windows.UI.Xaml
         {
             get { return this; }
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
@@ -188,16 +152,7 @@ namespace Windows.UI.Xaml
         /// <param name="value">The object to add.</param>
         public void Add(T value)
         {
-            this.CheckReentrancy();
-
-            if (null == value)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             this.AddOverride(value);
-
-            this.OnCollectionChanged(NotifyCollectionChangedAction.Add, value, this.CountInternal - 1);
         }
 
         /// <summary>
@@ -205,12 +160,9 @@ namespace Windows.UI.Xaml
         /// </summary>
         public void Clear()
         {
-            this.CheckReentrancy();
-
             this.ClearOverride();
-
-            this.OnCollectionReset();
         }
+
 
         /// <summary>
         /// Determines whether the <see cref="PresentationFrameworkCollection{T}"/> contains
@@ -277,21 +229,7 @@ namespace Windows.UI.Xaml
         /// <param name="value">The object to insert into the <see cref="PresentationFrameworkCollection{T}"/>.</param>
         public void Insert(int index, T value)
         {
-            this.CheckReentrancy();
-
-            if (null == value)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (index < 0 || index > this.CountInternal)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
             this.InsertOverride(index, value);
-
-            this.OnCollectionChanged(NotifyCollectionChangedAction.Add, value, index);
         }
 
         /// <summary>
@@ -301,15 +239,7 @@ namespace Windows.UI.Xaml
         /// <returns>true if an object was removed; otherwise, false.</returns>
         public bool Remove(T value)
         {
-            int index = this.IndexOf(value);
-
-            if (index >= 0)
-            {
-                this.RemoveAt(index);
-                return true;
-            }
-
-            return false;
+            return this.RemoveOverride(value);
         }
 
         /// <summary>
@@ -318,19 +248,10 @@ namespace Windows.UI.Xaml
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            this.CheckReentrancy();
-            
-            if (index < 0 || index >= this.CountInternal)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            T removedItem = this[index];
-
             this.RemoveAtOverride(index);
-
-            this.OnCollectionChanged(NotifyCollectionChangedAction.Remove, removedItem, index);
         }
+
+        #endregion
 
         #region Explicit Interface implementation
 
@@ -342,7 +263,7 @@ namespace Windows.UI.Xaml
         int IList.Add(object value)
         {
             this.Add((T)value);
-            return this.CountInternal;
+            return this.Count;
         }
 
         void IList.Remove(object value)
@@ -384,6 +305,8 @@ namespace Windows.UI.Xaml
 
         #endregion
 
+        #region Internal API
+
         #region Abstract/Virtual Members
 
         internal abstract void AddOverride(T value);
@@ -394,9 +317,15 @@ namespace Windows.UI.Xaml
 
         internal abstract void RemoveAtOverride(int index);
 
+        internal abstract bool RemoveOverride(T value);
+
         internal abstract void SetItemOverride(int index, T value);
 
         internal abstract T GetItemOverride(int index);
+
+        #endregion
+
+        #region Virtual Methods
 
         internal virtual bool IsFixedSizeImpl
         {
@@ -406,16 +335,6 @@ namespace Windows.UI.Xaml
         internal virtual bool IsReadOnlyImpl
         {
             get { return false; }
-        }
-
-        /// <summary>
-        /// Get the Count of the underlying <see cref="List{T}"/> collection.
-        /// This property returns the same value as the Count property and is only here
-        /// for performances.
-        /// </summary>
-        internal virtual int CountInternal
-        {
-            get { return this._collection.Count; }
         }
 
         internal virtual void CopyToImpl(Array array, int index)
@@ -452,7 +371,7 @@ namespace Windows.UI.Xaml
         internal void AddInternal(T value)
         {
             this._collection.Add(value);
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -461,7 +380,7 @@ namespace Windows.UI.Xaml
         internal void ClearInternal()
         {
             this._collection.Clear();
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -470,7 +389,7 @@ namespace Windows.UI.Xaml
         internal void InsertInternal(int index, T value)
         {
             this._collection.Insert(index, value);
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -479,7 +398,7 @@ namespace Windows.UI.Xaml
         internal void RemoveAtInternal(int index)
         {
             this._collection.RemoveAt(index);
-            this.UpdateCountProperty();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -489,7 +408,7 @@ namespace Windows.UI.Xaml
         {
             if (this._collection.Remove(value))
             {
-                this.UpdateCountProperty();
+                this.UpdateCountProperty(this.CountInternal);
                 return true;
             }
             return false;
@@ -522,13 +441,12 @@ namespace Windows.UI.Xaml
         // not FrameworkElements (and have no DataContext as a consequence).
         // ----------------------------------------------------------------- //
 
-        private static DependencyObject CastDO(T value)
+        private DependencyObject CastDO(T value)
         {
             if (!(value is DependencyObject valueDO))
             {
                 throw new ArgumentException(string.Format("'{0}' does not derive from {1}.", typeof(T).Name, typeof(DependencyObject).Name));
             }
-
             return valueDO;
         }
 
@@ -539,10 +457,10 @@ namespace Windows.UI.Xaml
         /// <param name="value"></param>
         internal void AddDependencyObjectInternal(T value)
         {
-            DependencyObject valueDO = CastDO(value);
+            DependencyObject valueDO = this.CastDO(value);
             this.ProvideSelfAsInheritanceContext(valueDO, null);
-
-            this.AddInternal(value);
+            this._collection.Add(value);
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -551,12 +469,12 @@ namespace Windows.UI.Xaml
         /// </summary>
         internal void ClearDependencyObjectInternal()
         {
-            foreach (DependencyObject valueDO in this.Select(v => CastDO(v)))
+            foreach (DependencyObject valueDO in this.Select(v => this.CastDO(v)))
             {
                 this.RemoveSelfAsInheritanceContext(valueDO, null);
             }
-
-            this.ClearInternal();
+            this._collection.Clear();
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -565,10 +483,10 @@ namespace Windows.UI.Xaml
         /// </summary>
         internal void InsertDependencyObjectInternal(int index, T value)
         {
-            DependencyObject valueDO = CastDO(value);
+            DependencyObject valueDO = this.CastDO(value);
             this.ProvideSelfAsInheritanceContext(valueDO, null);
-
-            this.InsertInternal(index, value);
+            this._collection.Insert(index, value);
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -577,10 +495,10 @@ namespace Windows.UI.Xaml
         /// </summary>
         internal void RemoveAtDependencyObjectInternal(int index)
         {
-            DependencyObject removedDO = CastDO(this._collection[index]);
+            DependencyObject removedDO = this.CastDO(this._collection[index]);
             this.RemoveSelfAsInheritanceContext(removedDO, null);
-
-            this.RemoveAtInternal(index);
+            this._collection.RemoveAt(index);
+            this.UpdateCountProperty(this.CountInternal);
         }
 
         /// <summary>
@@ -592,10 +510,12 @@ namespace Windows.UI.Xaml
             int index = this._collection.IndexOf(value);
             if (index > -1)
             {
-                this.RemoveAtDependencyObjectInternal(index);
+                DependencyObject removedDO = this.CastDO(this._collection[index]);
+                this.RemoveSelfAsInheritanceContext(removedDO, null);
+                this._collection.RemoveAt(index);
+                this.UpdateCountProperty(this.CountInternal);
                 return true;
             }
-
             return false;
         }
 
@@ -605,124 +525,30 @@ namespace Windows.UI.Xaml
         /// </summary>
         internal void SetItemDependencyObjectInternal(int index, T value)
         {
-            DependencyObject originalDO = CastDO(this._collection[index]);
-            DependencyObject newDO = CastDO(value);
+            DependencyObject originalDO = this.CastDO(this._collection[index]);
+            DependencyObject newDO = this.CastDO(value);
             this.RemoveSelfAsInheritanceContext(originalDO, null);
             this.ProvideSelfAsInheritanceContext(newDO, null);
-
-            this.SetItemInternal(index, value);
+            this._collection[index] = value;
         }
 
         #endregion
 
-        internal void UpdateCountProperty()
-        {
-            this.SetValue(CountProperty, this.CountInternal);
-        }
-
-        internal event NotifyCollectionChangedEventHandler CollectionChanged;
-
-        internal void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            if (this._processCollectionChanged)
-            {
-                this.__OnCollectionChanged(e);
-            }
-        }
-
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, object item, int index)
-        {
-            if (this._processCollectionChanged)
-            {
-                this.__OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, item, index));
-            }
-        }
-
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, object oldItem, object newItem, int index)
-        {
-            if (this._processCollectionChanged)
-            {
-                this.__OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, newItem, oldItem, index));
-            }
-        }
-
-        private void OnCollectionReset()
-        {
-            if (this._processCollectionChanged)
-            {
-                this.__OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-        }
-
-        private void __OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            NotifyCollectionChangedEventHandler handler = this.CollectionChanged;
-            if (handler != null)
-            {
-                using (this.BlockReentrancy())
-                {
-                    handler(this, e);
-                }
-            }
-        }
-
         /// <summary>
-        /// Disallow reentrant attempts to change this collection. E.g. a event handler
-        /// of the CollectionChanged event is not allowed to make changes to this collection.
+        /// Get the Count of the underlying <see cref="List{T}"/> collection.
+        /// This property returns the same value as the Count property and is only here
+        /// for performances.
         /// </summary>
-        /// <remarks>
-        /// typical usage is to wrap e.g. a OnCollectionChanged call with a using() scope:
-        /// <code>
-        ///         using (BlockReentrancy())
-        ///         {
-        ///             CollectionChanged(this, new NotifyCollectionChangedEventArgs(action, item, index));
-        ///         }
-        /// </code>
-        /// </remarks>
-        private IDisposable BlockReentrancy()
+        internal virtual int CountInternal
         {
-            this._monitor.Enter();
-            return this._monitor;
+            get { return this._collection.Count; }
         }
 
-        /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
-        /// <exception cref="InvalidOperationException"> raised when changing the collection
-        /// while another collection change is still being notified to other listeners </exception>
-        internal void CheckReentrancy()
+        internal void UpdateCountProperty(int value)
         {
-            if (!this._processCollectionChanged)
-            {
-                return;
-            }
-
-            if (this._monitor.Busy)
-            {
-                // we can allow changes if there's only one listener - the problem
-                // only arises if reentrant changes make the original event args
-                // invalid for later listeners.  This keeps existing code working
-                // (e.g. Selector.SelectedItems).
-                if (this.CollectionChanged?.GetInvocationList().Length > 1)
-                {
-                    throw new InvalidOperationException("Reentrancy not allowed");
-                }
-            }
+            this.SetValue(CountProperty, value);
         }
 
-        private class SimpleMonitor : IDisposable
-        {
-            public void Enter()
-            {
-                ++this._busyCount;
-            }
-
-            public void Dispose()
-            {
-                --this._busyCount;
-            }
-
-            public bool Busy { get { return this._busyCount > 0; } }
-
-            int _busyCount;
-        }
+        #endregion
     }
 }

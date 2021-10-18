@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,11 +12,15 @@
 *  
 \*====================================================================================*/
 
-using System;
-using CSHTML5.Internal;
-using OpenSilver.Internal;
 
+using CSHTML5.Internal;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 #if MIGRATION
+using System.Windows;
 using System.Windows.Controls;
 #else
 using Windows.UI.Xaml;
@@ -36,11 +41,12 @@ namespace System.Windows.Media.Effects
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DropShadowEffect"/>
+        /// Initializes a new instance of the System.Windows.Media.Effects.DropShadowEffect
         /// class.
         /// </summary>
         public DropShadowEffect()
         {
+
         }
 
         internal override void SetParentUIElement(UIElement newParent)
@@ -56,20 +62,27 @@ namespace System.Windows.Media.Effects
                 var domStyle = INTERNAL_HtmlDomManager.GetFrameworkElementOuterStyleForModification(_parentUIElement);
                 double x, y;
                 GetXYPositionFromDirectionAndDepth(out x, out y);
-                double opacity = Math.Max(Math.Min(1.0, this.Opacity), 0.0);
-               
-                string shadowString = x.ToInvariantString() + "px " +
-                    y.ToInvariantString() + "px " +
-                    BlurRadius.ToInvariantString() + "px " +
-                    Color.FromArgb(Convert.ToByte(opacity * 255d), Color.R, Color.G, Color.B).INTERNAL_ToHtmlString(1d);
-
+                double opacity = this.Opacity;
+                if (opacity > 1.0)
+                    opacity = 1.0;
+                else if (opacity < 0.0)
+                    opacity = 0.0;
                 if (_parentUIElement is TextBlock)
                 {
-                    domStyle.textShadow = shadowString;
+                    domStyle.textShadow = x.ToString() + "px " +
+                        y.ToString() + "px " +
+                        BlurRadius.ToString() + "px " +
+                        Color.FromArgb(Convert.ToByte(opacity * 255d), Color.R, Color.G, Color.B).INTERNAL_ToHtmlString(1d);
+                    
+                    //Color.INTERNAL_ToHtmlString();
                 }
                 else
                 {
-                    domStyle.boxShadow = shadowString;
+                    domStyle.boxShadow = x.ToString() + "px " +
+                        y.ToString() + "px " +
+                        BlurRadius.ToString() + "px " +
+                        Color.FromArgb(Convert.ToByte(opacity * 255d), Color.R, Color.G, Color.B).INTERNAL_ToHtmlString(1d);
+                        //Color.INTERNAL_ToHtmlString();
 
                     domStyle.borderCollapse = "separate"; // This is required for IE only. If this property is not set or equal to "collapse", the shadow does not render at all on IE. See: http://stackoverflow.com/questions/9949396/css-box-shadow-not-working-in-ie
                     domStyle.borderSpacing = "0px"; // This is required to fix a bug that comes with the line above: a 2 px margin appears around the children of the element, which can lead to some elements overflowing relative to those children when they shouldn't.
@@ -91,16 +104,15 @@ namespace System.Windows.Media.Effects
             get { return (double)GetValue(BlurRadiusProperty); }
             set { SetValue(BlurRadiusProperty, value); }
         }
-
         /// <summary>
-        /// Identifies the <see cref="BlurRadius"/> dependency property.
+        /// Identifies the System.Windows.Media.Effects.DropShadowEffect.BlurRadius dependency
+        /// property.
         /// </summary>
         public static readonly DependencyProperty BlurRadiusProperty =
-            DependencyProperty.Register(
-                nameof(BlurRadius), 
-                typeof(double), 
-                typeof(DropShadowEffect), 
-                new PropertyMetadata(5d, ManageChange));
+            DependencyProperty.Register("BlurRadius", 
+                                        typeof(double), 
+                                        typeof(DropShadowEffect), 
+                                        new PropertyMetadata(5d, ManageChange));
 
         private static void ManageChange(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -115,16 +127,15 @@ namespace System.Windows.Media.Effects
             get { return (Color)GetValue(ColorProperty); }
             set { SetValue(ColorProperty, value); }
         }
-
         /// <summary>
-        /// Identifies the <see cref="Color"/> dependency property.
+        /// Identifies the System.Windows.Media.Effects.DropShadowEffect.Color dependency
+        /// property.
         /// </summary>
         public static readonly DependencyProperty ColorProperty =
-            DependencyProperty.Register(
-                nameof(Color), 
-                typeof(Color), 
-                typeof(DropShadowEffect), 
-                new PropertyMetadata(Colors.Black, ManageChange));
+            DependencyProperty.Register("Color", 
+                                        typeof(Color), 
+                                        typeof(DropShadowEffect), 
+                                        new PropertyMetadata(Colors.Black, ManageChange));
 
         /// <summary>
         /// Gets or sets the direction of the drop shadow.
@@ -134,16 +145,15 @@ namespace System.Windows.Media.Effects
             get { return (double)GetValue(DirectionProperty); }
             set { SetValue(DirectionProperty, value); }
         }
-
         /// <summary>
-        /// Identifies the <see cref="Direction"/> dependency property.
+        /// Identifies the System.Windows.Media.Effects.DropShadowEffect.Direction dependency
+        /// property.
         /// </summary>
         public static readonly DependencyProperty DirectionProperty =
-            DependencyProperty.Register(
-                nameof(Direction), 
-                typeof(double), 
-                typeof(DropShadowEffect), 
-                new PropertyMetadata(315d, ManageChange));
+            DependencyProperty.Register("Direction", 
+                                        typeof(double), 
+                                        typeof(DropShadowEffect), 
+                                        new PropertyMetadata(315d, ManageChange));
 
         /// <summary>
         /// Gets or sets the opacity of the drop shadow.
@@ -153,16 +163,15 @@ namespace System.Windows.Media.Effects
             get { return (double)GetValue(OpacityProperty); }
             set { SetValue(OpacityProperty, value); }
         }
-
         /// <summary>
-        /// Identifies the <see cref="Opacity"/> dependency property.
+        /// Identifies the System.Windows.Media.Effects.DropShadowEffect.Opacity dependency
+        /// property.
         /// </summary>
         public static readonly DependencyProperty OpacityProperty =
-            DependencyProperty.Register(
-                nameof(Opacity), 
-                typeof(double), 
-                typeof(DropShadowEffect), 
-                new PropertyMetadata(1d, ManageChange));
+            DependencyProperty.Register("Opacity", 
+                                        typeof(double), 
+                                        typeof(DropShadowEffect), 
+                                        new PropertyMetadata(1d, ManageChange));
 
         //// Returns:
         ////     A System.Windows.Media.Effects.RenderingBias value that indicates whether
@@ -192,16 +201,15 @@ namespace System.Windows.Media.Effects
             get { return (double)GetValue(ShadowDepthProperty); }
             set { SetValue(ShadowDepthProperty, value); }
         }
-
         /// <summary>
-        /// Identifies the <see cref="ShadowDepth"/> dependency property.
+        /// Identifies the System.Windows.Media.Effects.DropShadowEffect.ShadowDepth
+        /// dependency property.
         /// </summary>
         public static readonly DependencyProperty ShadowDepthProperty =
-            DependencyProperty.Register(
-                nameof(ShadowDepth), 
-                typeof(double), 
-                typeof(DropShadowEffect), 
-                new PropertyMetadata(5d, ManageChange));
+            DependencyProperty.Register("ShadowDepth", 
+                                        typeof(double), 
+                                        typeof(DropShadowEffect), 
+                                        new PropertyMetadata(5d, ManageChange));
 
         ///// <summary>
         ///// Creates a modifiable clone of this System.Windows.Media.Effects.Effect object,

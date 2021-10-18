@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,13 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 #if MIGRATION
 namespace System.Windows.Media.Animation
@@ -25,10 +32,6 @@ namespace Windows.UI.Xaml.Media.Animation
     /// </summary>
     public sealed partial class ObjectKeyFrameCollection : PresentationFrameworkCollection<ObjectKeyFrame>
     {
-        public ObjectKeyFrameCollection() : base(false)
-        {
-        }
-
         internal override void AddOverride(ObjectKeyFrame keyFrame)
         {
             this.AddDependencyObjectInternal(keyFrame);
@@ -47,6 +50,11 @@ namespace Windows.UI.Xaml.Media.Animation
         internal override void RemoveAtOverride(int index)
         {
             this.RemoveAtDependencyObjectInternal(index);
+        }
+
+        internal override bool RemoveOverride(ObjectKeyFrame keyFrame)
+        {
+            return this.RemoveDependencyObjectInternal(keyFrame);
         }
 
         internal override ObjectKeyFrame GetItemOverride(int index)

@@ -30,12 +30,13 @@ namespace Windows.UI.Xaml.Controls
 #endif
 {
     /// <summary>
-    /// Provides information for the System.Windows.Controls.Validation.Error attached
+    /// Provides information for the System.Windows.Controls.Validation.Error attached
     /// event.
     /// </summary>
     public partial class ValidationErrorEventArgs : RoutedEventArgs
     {
         private ValidationErrorEventAction _action;
+        private bool m_handled;
 
         /// <summary>
         /// Gets a value that indicates whether the error is a new error or an existing
@@ -58,6 +59,12 @@ namespace Windows.UI.Xaml.Controls
         {
             get { return _error; }
             internal set { _error = value; }
+        }
+
+        public new bool Handled
+        {
+            get { return m_handled; }
+            set { m_handled = value; }
         }
 
         ///// <summary>

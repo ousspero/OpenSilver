@@ -117,10 +117,7 @@ namespace DotNetForHtml5.Compiler
                             fieldModifier = fieldModifierAttr.Value?.ToLower() ?? "private";
                         }
 
-                        // add '@' to handle cases where x:Name is a forbidden word (for instance 'this'
-                        // or any other c# keyword)
-                        string fieldName = "@" + name;
-                        resultingFieldsForNamedElements.Add(string.Format("{0} {1} {2};", fieldModifier, elementTypeInCSharp, fieldName));
+                        resultingFieldsForNamedElements.Add(string.Format("{0} {1} {2};", fieldModifier, elementTypeInCSharp, name));
                     }
                 }
             }
@@ -905,7 +902,6 @@ else
                                         //-------------
 
                                         string name = attributeValue;
-
                                         // Add the code to register the name, etc.
                                         if (isElementInRootNamescope && !reflectionOnSeparateAppDomain.IsAssignableFrom(
                                                 namespaceSystemWindows,
@@ -919,13 +915,9 @@ else
                                             {
                                                 fieldModifier = (attr.Value ?? "").ToLower();
                                             }
-
-                                            // add '@' to handle cases where x:Name is a forbidden word (for instance 'this'
-                                            // or any other c# keyword)
-                                            string fieldName = "@" + name;
-                                            resultingFieldsForNamedElements.Add(string.Format("{0} {1} {2};", fieldModifier, elementTypeInCSharp, fieldName));
+                                            resultingFieldsForNamedElements.Add(string.Format("{0} {1} {2};", fieldModifier, elementTypeInCSharp, name));
                                             //resultingFindNameCalls.Add(string.Format("{0} = ({1})this.FindName(\"{2}\");", name, elementTypeInCSharp, name));
-                                            resultingFindNameCalls.Add(string.Format("{0} = {1};", fieldName, elementUniqueNameOrThisKeyword));
+                                            resultingFindNameCalls.Add(string.Format("{0} = {1};", name, elementUniqueNameOrThisKeyword));
                                             stringBuilder.AppendLine(string.Format("this.RegisterName(\"{0}\", {1});", name, elementUniqueNameOrThisKeyword));
                                         }
                                         else if (elementThatIsRootOfTheCurrentNamescope.Name == DefaultXamlNamespace + "ControlTemplate")
@@ -1043,7 +1035,7 @@ else
 
                                                         XName typeName = element.Name;
                                                         string propertyName = attribute.Name.LocalName;
-                                                        
+
                                                         codeForInstantiatingTheAttributeValue = 
                                                             GenerateCodeForInstantiatingAttributeValue(
                                                                 typeName, 
@@ -1093,15 +1085,7 @@ else
                                     if (classLocalNameForAttachedProperty != "Storyboard" || propertyName == "TargetName")
                                     {
                                         // Generate the code for instantiating the attribute value:
-                                        string codeForInstantiatingTheAttributeValue = GenerateCodeForInstantiatingAttributeValue(
-                                            elementNameForAttachedProperty, 
-                                            propertyName, 
-                                            isAttachedProperty, 
-                                            attributeValue, 
-                                            element, 
-                                            fileNameWithPathRelativeToProjectRoot, 
-                                            assemblyNameWithoutExtension, 
-                                            reflectionOnSeparateAppDomain);
+                                        string codeForInstantiatingTheAttributeValue = GenerateCodeForInstantiatingAttributeValue(elementNameForAttachedProperty, propertyName, isAttachedProperty, attributeValue, element, fileNameWithPathRelativeToProjectRoot, assemblyNameWithoutExtension, reflectionOnSeparateAppDomain);
 
                                         // Append the statement:
                                         stringBuilder.AppendLine(string.Format("{0}.Set{1}({2},{3});", classFullNameForAttachedProperty, propertyName, elementUniqueNameOrThisKeyword, codeForInstantiatingTheAttributeValue));
@@ -2414,23 +2398,10 @@ public static void Main()
                 bool isKnownCoreType = CoreTypesHelper.IsSupportedCoreType(
                     valueTypeFullName.Substring("global::".Length), valueAssemblyName
                 );
-
-                string declaringTypeName = reflectionOnSeparateAppDomain.GetCSharpEquivalentOfXamlTypeAsString(
-                    namespaceName, localTypeName, assemblyNameIfAny
+                
+                return ConvertFromInvariantString(
+                    value, valueTypeFullName, isKnownCoreType, isKnownSystemType
                 );
-
-                if (isAttachedProperty)
-                {
-                    return ConvertFromInvariantString(
-                        value, valueTypeFullName, isKnownCoreType, isKnownSystemType
-                    );
-                }
-                else
-                {
-                    return ConvertFromInvariantString(
-                        declaringTypeName, propertyName, value, valueTypeFullName, isKnownCoreType, isKnownSystemType
-                    );
-                }
             }
         }
 
@@ -2532,29 +2503,6 @@ public static void Main()
             }
 
             return preparedValue;
-        }
-
-        private static string ConvertFromInvariantString(
-            string propertyDeclaringType, 
-            string propertyName,
-            string value,
-            string propertyType, 
-            bool isKnownCoreType, 
-            bool isKnownSystemType)
-        {
-            string Escape(string stringValue)
-            {
-                return string.Concat("@\"", stringValue.Replace("\"", "\"\""), "\"");
-            }
-
-            return string.Format(
-                "global::OpenSilver.Internal.Xaml.RuntimeHelpers.GetPropertyValue<{0}>(typeof({1}), {2}, {3}, () => {4})",
-                propertyType,
-                propertyDeclaringType,
-                Escape(propertyName),
-                Escape(value),
-                ConvertFromInvariantString(value, propertyType, isKnownCoreType, isKnownSystemType)
-            );
         }
 
         private static bool IsReservedAttribute(string attributeName)

@@ -89,6 +89,16 @@ namespace Windows.UI.Xaml.Controls
         /// </summary>
         protected bool DisableBaseControlHandlingOfVisualStates = false;
 
+        internal override bool EnablePointerEventsCore
+        {
+            get
+            {
+                // Note: this should always be false, but we return true to prevent issue with
+                // controls that do not have template (like ScrollViewer).
+                return true;
+            }
+        }
+
         //-----------------------
         // ISENABLED (OVERRIDE)
         //-----------------------
@@ -1059,7 +1069,6 @@ void Control_PointerReleased(object sender, Input.PointerRoutedEventArgs e)
         }
 #endif
 
-#if MIGRATION
         /// <summary>Called before the <see cref="E:System.Windows.UIElement.MouseWheel" /> event occurs to provide handling for the event in a derived class without attaching a delegate. </summary>
         /// <param name="e">A <see cref="T:System.Windows.Input.MouseWheelEventArgs" /> that contains the event data.</param>
         [OpenSilver.NotImplemented]
@@ -1067,7 +1076,6 @@ void Control_PointerReleased(object sender, Input.PointerRoutedEventArgs e)
         {
 
         }
-#endif
 
         [OpenSilver.NotImplemented]
         public static readonly DependencyProperty TabNavigationProperty = 

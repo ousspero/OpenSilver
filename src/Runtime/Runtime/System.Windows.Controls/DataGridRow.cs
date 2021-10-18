@@ -66,13 +66,6 @@ namespace Windows.UI.Xaml.Controls
             border.HorizontalAlignment = HorizontalAlignment.Stretch;
             border.VerticalAlignment = VerticalAlignment.Stretch;
             border.Background = new SolidColorBrush(Colors.Gray);
-            CheckBox checkbox = new CheckBox();
-            checkbox.HorizontalAlignment = HorizontalAlignment.Center;
-            checkbox.VerticalAlignment = VerticalAlignment.Center;
-            Binding b = new Binding("IsSelected");
-            b.Mode = BindingMode.TwoWay;
-            checkbox.SetBinding(CheckBox.IsCheckedProperty, b);
-            border.Child = checkbox;
             templateInstance.TemplateContent = border;
             return templateInstance;
         }
@@ -109,9 +102,9 @@ namespace Windows.UI.Xaml.Controls
 
         public static readonly DependencyProperty HeaderTemplateProperty =
             DependencyProperty.Register(
-                nameof(HeaderTemplate), 
-                typeof(DataTemplate), 
-                typeof(DataGridRow), 
+                nameof(HeaderTemplate),
+                typeof(DataTemplate),
+                typeof(DataGridRow),
                 new PropertyMetadata(null, HeaderTemplate_Changed));
 
         private static void HeaderTemplate_Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -186,9 +179,9 @@ namespace Windows.UI.Xaml.Controls
 
         public static readonly DependencyProperty IsSelectedProperty =
             DependencyProperty.Register(
-                nameof(IsSelected), 
-                typeof(bool), 
-                typeof(DataGridRow), 
+                nameof(IsSelected),
+                typeof(bool),
+                typeof(DataGridRow),
                 new PropertyMetadata(false, IsSelected_Changed));
 
         private static void IsSelected_Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)

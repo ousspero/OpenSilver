@@ -55,7 +55,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(AngleX), 
                 typeof(double), 
                 typeof(SkewTransform), 
-                new PropertyMetadata(0d, OnAngleXChanged)
+                new PropertyMetadata(0d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -79,11 +79,6 @@ namespace Windows.UI.Xaml.Media
                     }
                 });
 
-        private static void OnAngleXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((SkewTransform)d).RaiseTransformChanged();
-        }
-
         /// <summary>
         /// Gets or sets the y-axis skew angle, which is measured in degrees counterclockwise
         /// from the x-axis.
@@ -102,7 +97,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(AngleY), 
                 typeof(double), 
                 typeof(SkewTransform), 
-                new PropertyMetadata(0d, OnAngleYChanged)
+                new PropertyMetadata(0d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -125,11 +120,6 @@ namespace Windows.UI.Xaml.Media
                         return null;
                     }
                 });
-
-        private static void OnAngleYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((SkewTransform)d).RaiseTransformChanged();
-        }
 
         private void ApplyCSSChanges(double angleX, double angleY)
         {
@@ -182,7 +172,7 @@ namespace Windows.UI.Xaml.Media
             }
         }
 
-        internal override Matrix ValueInternal
+        internal override Matrix Value
         {
             get
             {

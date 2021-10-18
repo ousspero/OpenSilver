@@ -54,7 +54,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(ScaleX), 
                 typeof(double), 
                 typeof(ScaleTransform), 
-                new PropertyMetadata(1d, OnScaleXChanged)
+                new PropertyMetadata(1d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -78,11 +78,6 @@ namespace Windows.UI.Xaml.Media
                     }
                 });
 
-        private static void OnScaleXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((ScaleTransform)d).RaiseTransformChanged();
-        }
-
         /// <summary>
         /// Gets or sets the y-axis scale factor.
         /// </summary>
@@ -100,7 +95,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(ScaleY), 
                 typeof(double), 
                 typeof(ScaleTransform), 
-                new PropertyMetadata(1d, OnScaleYChanged)
+                new PropertyMetadata(1d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -123,11 +118,6 @@ namespace Windows.UI.Xaml.Media
                         return null;
                     }
                 });
-
-        private static void OnScaleYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((ScaleTransform)d).RaiseTransformChanged();
-        }
 
         private void ApplyCSSChanges(double scaleX, double scaleY)
         {
@@ -180,7 +170,7 @@ namespace Windows.UI.Xaml.Media
             }
         }
 
-        internal override Matrix ValueInternal
+        internal override Matrix Value
         {
             get
             {

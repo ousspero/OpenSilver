@@ -24,7 +24,5 @@ namespace Windows.UI.Xaml.Input
     /// <summary>
     ///     The delegate to use for handlers that receive MouseWheelEventArgs.
     /// </summary>
-#if MIGRATION
-    public delegate void MouseWheelEventHandler(object sender, MouseWheelEventArgs e); 
-#endif
+    public delegate void MouseWheelEventHandler(object sender, MouseWheelEventArgs e);
 }

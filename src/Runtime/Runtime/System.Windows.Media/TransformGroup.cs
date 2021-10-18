@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,11 +12,18 @@
 *  
 \*====================================================================================*/
 
-using System;
+
 using System.Windows.Markup;
+using CSHTML5.Internal;
 using System.Collections.Generic;
 using System.Globalization;
-using CSHTML5.Internal;
+
+#if MIGRATION
+using System.Windows;
+#else
+using Windows.Foundation;
+#endif
+
 
 #if MIGRATION
 namespace System.Windows.Media
@@ -23,28 +31,13 @@ namespace System.Windows.Media
 namespace Windows.UI.Xaml.Media
 #endif
 {
-    /// <summary>
-    /// Represents a composite <see cref="Transform"/> composed of other <see cref="Transform"/>
-    /// objects.
-    /// </summary>
     [ContentProperty(nameof(Children))]
     public sealed partial class TransformGroup : Transform
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TransformGroup"/> class.
-        /// </summary>
         public TransformGroup()
         {
-            Changed += (o, e) => INTERNAL_ApplyTransform();
         }
-
-        /// <summary>
-        /// Gets or sets the collection of child <see cref="Transform"/> objects.
-        /// </summary>
-        /// <returns>
-        /// The collection of child <see cref="Transform"/> objects. The default is
-        /// an empty collection.
-        /// </returns>
+        
         public TransformCollection Children
         {
             get
@@ -60,27 +53,14 @@ namespace Windows.UI.Xaml.Media
             set { SetValue(ChildrenProperty, value); }
         }
 
-        /// <summary>
-        /// Identifies the <see cref="Children"/> dependency property.
-        /// </summary>
         public static readonly DependencyProperty ChildrenProperty =
             DependencyProperty.Register(
                 nameof(Children), 
                 typeof(TransformCollection), 
                 typeof(TransformGroup), 
-                new PropertyMetadata(null, OnChildrenChanged));
+                new PropertyMetadata((object)null));
 
-        private static void OnChildrenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            TransformGroup transformGroup = (TransformGroup)d;
-            TransformCollection oldValue = (TransformCollection)e.OldValue;
-            TransformCollection newValue = (TransformCollection)e.NewValue;
-            
-            oldValue?.SetParentTransform(null);
-            newValue?.SetParentTransform(transformGroup);
-        }
-
-        internal override Matrix ValueInternal
+        internal override Matrix Value
         {
             get
             {
@@ -90,11 +70,11 @@ namespace Windows.UI.Xaml.Media
                     return new Matrix();
                 }
 
-                Matrix transform = children[0].ValueInternal;
+                Matrix transform = children[0].Value;
 
                 for (int i = 1; i < children.Count; i++)
                 {
-                    transform = Matrix.Multiply(transform, children[i].ValueInternal);
+                    transform = Matrix.Multiply(transform, children[i].Value);
                 }
 
                 return transform;
@@ -119,7 +99,7 @@ namespace Windows.UI.Xaml.Media
         {
             if (this.INTERNAL_parent != null && INTERNAL_VisualTreeManager.IsElementInVisualTree(this.INTERNAL_parent))
             {
-                ApplyCSSChanges(this.ValueInternal);
+                ApplyCSSChanges(this.Value);
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,18 +12,13 @@
 *  
 \*====================================================================================*/
 
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-
-#if MIGRATION
-using System.Windows.Media;
-using System.Windows.Controls.Primitives;
-#else
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Controls.Primitives;
-#endif
+using System.Text;
+using System.Threading.Tasks;
 
 #if MIGRATION
 namespace System.Windows.Controls
@@ -36,78 +32,78 @@ namespace Windows.UI.Xaml.Controls
     /// <QualityBand>Experimental</QualityBand>
     public static partial class ItemsControlExtensions
     {
-        /// <summary>
-        /// Gets the Panel that contains the containers of an ItemsControl.
-        /// </summary>
-        /// <param name="control">The ItemsControl.</param>
-        /// <returns>
-        /// The Panel that contains the containers of an ItemsControl, or null
-        /// if the Panel could not be found.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="control" /> is null.
-        /// </exception>
-        public static Panel GetItemsHost(this ItemsControl control)
-        {
-            if (control == null)
-            {
-                throw new ArgumentNullException("control");
-            }
+        ///// <summary>
+        ///// Gets the Panel that contains the containers of an ItemsControl.
+        ///// </summary>
+        ///// <param name="control">The ItemsControl.</param>
+        ///// <returns>
+        ///// The Panel that contains the containers of an ItemsControl, or null
+        ///// if the Panel could not be found.
+        ///// </returns>
+        ///// <exception cref="T:System.ArgumentNullException">
+        ///// <paramref name="control" /> is null.
+        ///// </exception>
+        //public static Panel GetItemsHost(this ItemsControl control)
+        //{
+        //    if (control == null)
+        //    {
+        //        throw new ArgumentNullException("control");
+        //    }
 
-            // Get the first live container
-            DependencyObject container = control.ItemContainerGenerator.ContainerFromIndex(0);
+        //    // Get the first live container
+        //    DependencyObject container = control.ItemContainerGenerator.ContainerFromIndex(0);
 
-            if (container != null)
-            {
-                return VisualTreeHelper.GetParent(container) as Panel;
-            }
+        //    if (container != null)
+        //    {
+        //        return VisualTreeHelper.GetParent(container) as Panel;
+        //    }
 
-            FrameworkElement rootVisual = control.GetVisualChildren().FirstOrDefault() as FrameworkElement;
-            if (rootVisual != null)
-            {
-                ItemsPresenter presenter = rootVisual.GetLogicalDescendents().OfType<ItemsPresenter>().FirstOrDefault();
-                if (presenter != null && VisualTreeHelper.GetChildrenCount(presenter) > 0)
-                {
-                    return VisualTreeHelper.GetChild(presenter, 0) as Panel;
-                }
-            }
-            return null;
-        }
+        //    FrameworkElement rootVisual = control.GetVisualChildren().FirstOrDefault() as FrameworkElement;
+        //    if (rootVisual != null)
+        //    {
+        //        ItemsPresenter presenter = rootVisual.GetLogicalDescendents().OfType<ItemsPresenter>().FirstOrDefault();
+        //        if (presenter != null && VisualTreeHelper.GetChildrenCount(presenter) > 0)
+        //        {
+        //            return VisualTreeHelper.GetChild(presenter, 0) as Panel;
+        //        }
+        //    }
+        //    return null;
+        //}
 
-        /// <summary>
-        /// Gets the ScrollViewer that contains the containers of an
-        /// ItemsControl.
-        /// </summary>
-        /// <param name="control">The ItemsControl.</param>
-        /// <returns>
-        /// The ScrollViewer that contains the containers of an ItemsControl, or
-        /// null if a ScrollViewer could not be found.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="control" /> is null.
-        /// </exception>
-        public static ScrollViewer GetScrollHost(this ItemsControl control)
-        {
-            if (control == null)
-            {
-                throw new ArgumentNullException("control");
-            }
+        ///// <summary>
+        ///// Gets the ScrollViewer that contains the containers of an
+        ///// ItemsControl.
+        ///// </summary>
+        ///// <param name="control">The ItemsControl.</param>
+        ///// <returns>
+        ///// The ScrollViewer that contains the containers of an ItemsControl, or
+        ///// null if a ScrollViewer could not be found.
+        ///// </returns>
+        ///// <exception cref="T:System.ArgumentNullException">
+        ///// <paramref name="control" /> is null.
+        ///// </exception>
+        //public static ScrollViewer GetScrollHost(this ItemsControl control)
+        //{
+        //    if (control == null)
+        //    {
+        //        throw new ArgumentNullException("control");
+        //    }
 
-            Panel itemsHost = GetItemsHost(control);
-            if (itemsHost == null)
-            {
-                return null;
-            }
+        //    Panel itemsHost = GetItemsHost(control);
+        //    if (itemsHost == null)
+        //    {
+        //        return null;
+        //    }
 
-            // Walk up the visual tree from the ItemsHost to the
-            // ItemsControl looking for a ScrollViewer that wraps
-            // the ItemsHost.
-            return itemsHost
-                .GetVisualAncestors()
-                .Where(c => c != control)
-                .OfType<ScrollViewer>()
-                .FirstOrDefault();
-        }
+        //    // Walk up the visual tree from the ItemsHost to the
+        //    // ItemsControl looking for a ScrollViewer that wraps
+        //    // the ItemsHost.
+        //    return itemsHost
+        //        .GetVisualAncestors()
+        //        .Where(c => c != control)
+        //        .OfType<ScrollViewer>()
+        //        .FirstOrDefault();
+        //}
 
         #region GetContainers
         /// <summary>

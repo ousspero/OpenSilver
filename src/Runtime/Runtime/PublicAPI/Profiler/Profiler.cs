@@ -60,7 +60,6 @@ namespace CSHTML5
 #endif
         public static void StopMeasuringTime(string measureDescription, double numberReturnedByTheStartMeasuringTimeMethod)
         {
-            OpenSilver.Interop.ExecuteJavaScript("document.addToPerformanceCounters($0, $1)", measureDescription, numberReturnedByTheStartMeasuringTimeMethod);
         }
 
 #if !BRIDGE
@@ -70,7 +69,6 @@ namespace CSHTML5
 #endif
         public static void ConsoleTime(string label)
         {
-            OpenSilver.Interop.ExecuteJavaScript("console.time($0)", label);
         }
 
 #if !BRIDGE
@@ -80,7 +78,6 @@ namespace CSHTML5
 #endif
         public static void ConsoleTimeEnd(string label)
         {
-            OpenSilver.Interop.ExecuteJavaScript("console.timeEnd($0)", label);
         }
 
 #if !BRIDGE
@@ -90,7 +87,6 @@ namespace CSHTML5
 #endif
         public static void ConsoleTimeLog(string label)
         {
-            OpenSilver.Interop.ExecuteJavaScript("console.timeLog($0)", label);
         }
     }
 }

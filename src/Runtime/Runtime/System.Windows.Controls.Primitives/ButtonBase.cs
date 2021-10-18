@@ -289,7 +289,7 @@ namespace Windows.UI.Xaml.Controls.Primitives
 
                 StopPointerCapture();
 
-                if (ClickMode == ClickMode.Release)
+                if (ClickMode == ClickMode.Release && this.IsMouseOver)
                 {
                     OnClick();
                 }

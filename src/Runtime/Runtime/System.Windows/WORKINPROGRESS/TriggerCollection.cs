@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,9 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
 
 #if MIGRATION
 namespace System.Windows
@@ -22,10 +25,6 @@ namespace Windows.UI.Xaml
 	[OpenSilver.NotImplemented]
     public sealed partial class TriggerCollection : PresentationFrameworkCollection<TriggerBase>
     {
-        public TriggerCollection() : base(false)
-        {
-        }
-
         internal override void AddOverride(TriggerBase value)
         {
             this.AddDependencyObjectInternal(value);
@@ -44,6 +43,11 @@ namespace Windows.UI.Xaml
         internal override void RemoveAtOverride(int index)
         {
             this.RemoveAtDependencyObjectInternal(index);
+        }
+
+        internal override bool RemoveOverride(TriggerBase value)
+        {
+            return this.RemoveDependencyObjectInternal(value);
         }
 
         internal override TriggerBase GetItemOverride(int index)

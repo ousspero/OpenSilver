@@ -36,24 +36,18 @@ namespace Windows.UI.Xaml.Media
         /// <summary>
         /// Initializes a new instance that is empty.
         /// </summary>
-        public PointCollection() : base(false) 
-        { 
-        }
+        public PointCollection() { }
 
         /// <summary>
         /// Initializes a new instance that is empty and has the specified initial capacity.
         /// </summary>
         /// <param name="capacity">int - The number of elements that the new list is initially capable of storing.</param>
-        public PointCollection(int capacity) : base(capacity, false) 
-        { 
-        }
+        public PointCollection(int capacity) : base(capacity) { }
 
         /// <summary>
         /// Creates a PointCollection with all of the same elements as collection
         /// </summary>
-        public PointCollection(IEnumerable<Point> points) : base(points, false) 
-        { 
-        }
+        public PointCollection(IEnumerable<Point> points) : base(points) { }
 
         public static PointCollection Parse(string source)
         {
@@ -88,25 +82,35 @@ namespace Windows.UI.Xaml.Media
         internal override void AddOverride(Point point)
         {
             this.AddInternal(point);
-            this.NotifyParent();
+            this.NotifyCollectionChanged();
         }
 
         internal override void ClearOverride()
         {
             this.ClearInternal();
-            this.NotifyParent();
+            this.NotifyCollectionChanged();
         }
 
         internal override void RemoveAtOverride(int index)
         {
             this.RemoveAtInternal(index);
-            this.NotifyParent();
+            this.NotifyCollectionChanged();
+        }
+
+        internal override bool RemoveOverride(Point point)
+        {
+            if (this.RemoveInternal(point))
+            {
+                this.NotifyCollectionChanged();
+                return true;
+            }
+            return false;
         }
 
         internal override void InsertOverride(int index, Point point)
         {
             this.InsertInternal(index, point);
-            this.NotifyParent();
+            this.NotifyCollectionChanged();
         }
 
         internal override Point GetItemOverride(int index)
@@ -117,7 +121,7 @@ namespace Windows.UI.Xaml.Media
         internal override void SetItemOverride(int index, Point point)
         {
             this.SetItemInternal(index, point);
-            this.NotifyParent();
+            this.NotifyCollectionChanged();
         }
 
         internal void SetParentPath(Path path)
@@ -125,7 +129,7 @@ namespace Windows.UI.Xaml.Media
             this._parentPath = path;
         }
 
-        private void NotifyParent()
+        private void NotifyCollectionChanged()
         {
             if (this._parentPath != null)
             {

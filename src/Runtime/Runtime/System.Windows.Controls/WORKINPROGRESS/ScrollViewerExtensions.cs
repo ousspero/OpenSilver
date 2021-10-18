@@ -135,11 +135,7 @@ namespace Windows.UI.Xaml.Controls
 
             if (!e.Handled)
             {
-#if MIGRATION
-                double position = CoerceVerticalOffset(viewer, viewer.VerticalOffset - e.Delta); 
-#else
-                double position = CoerceVerticalOffset(viewer, viewer.VerticalOffset - e.GetCurrentPoint(null).Properties.MouseWheelDelta);
-#endif
+                double position = CoerceVerticalOffset(viewer, viewer.VerticalOffset - e.Delta);
                 viewer.ScrollToVerticalOffset(position);
                 e.Handled = true;
             }

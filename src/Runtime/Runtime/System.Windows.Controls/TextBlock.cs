@@ -66,14 +66,6 @@ namespace Windows.UI.Xaml.Controls
             return div;
         }
 
-        internal override bool EnablePointerEventsCore
-        {
-            get
-            {
-                return true;
-            }
-        }
-
         /// <summary>
         /// Get or Set the Text property
         /// </summary>
@@ -99,15 +91,8 @@ namespace Windows.UI.Xaml.Controls
             if (!textBlock._isTextChanging)
             {
                 textBlock._isTextChanging = true;
-                if (textBlock.Inlines.Count == 1 && textBlock.Inlines[0] as Run != null)
-                {
-                    (textBlock.Inlines[0] as Run).Text = (string)e.NewValue;
-                }
-                else
-                {
-                    textBlock.Inlines.Clear();
-                    textBlock.Inlines.Add(new Run() { Text = (string)e.NewValue });
-                }
+                textBlock.Inlines.Clear();
+                textBlock.Inlines.Add(new Run() { Text = (string)e.NewValue });
                 textBlock._isTextChanging = false;
             }
         }

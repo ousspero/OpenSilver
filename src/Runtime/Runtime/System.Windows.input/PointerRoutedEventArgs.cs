@@ -337,7 +337,6 @@ namespace Windows.UI.Xaml.Input
 #else
         public PointerPoint GetCurrentPoint(UIElement relativeTo)
         {
-            int wheelDelta = PointerPointProperties.GetPointerWheelDelta(INTERNAL_OriginalJSEventArg);
             if (relativeTo == null)
             {
                 //-----------------------------------
@@ -347,7 +346,6 @@ namespace Windows.UI.Xaml.Input
                 {
                     Position = new Point(_pointerAbsoluteX, _pointerAbsoluteY)
                 };
-                pointerPoint.Properties.MouseWheelDelta = wheelDelta;
                 return pointerPoint;
             }
             else
@@ -364,7 +362,6 @@ namespace Windows.UI.Xaml.Input
                 {
                     Position = generalTransform.TransformPoint(new Point(_pointerAbsoluteX, _pointerAbsoluteY))
                 };
-                pointerPoint.Properties.MouseWheelDelta = wheelDelta;
                 return pointerPoint;
             }
         }
@@ -395,7 +392,7 @@ namespace Windows.UI.Xaml.Input
         [OpenSilver.NotImplemented]
         public StylusDevice StylusDevice { get; private set; }
 
-#if MIGRATION
+#if !MIGRATION
         [OpenSilver.NotImplemented]
         public int Delta { get; private set; }
 #endif

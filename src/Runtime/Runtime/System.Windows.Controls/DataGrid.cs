@@ -782,6 +782,7 @@ namespace Windows.UI.Xaml.Controls
 
         protected override void OnItemsSourceChanged(IEnumerable oldValue, IEnumerable newValue)
         {
+            this.SelectedItems.Clear();
             if (newValue == null)
             {
                 //--------------
@@ -915,6 +916,14 @@ namespace Windows.UI.Xaml.Controls
             base.INTERNAL_OnDetachedFromVisualTree();
 
             _areItemsInVisualTree = false;
+        }
+
+        internal INTERNAL_PagedCollectionView PagedView
+        {
+            get
+            {
+                return _pagedView;
+            }
         }
 
         #endregion Internal 
@@ -1060,11 +1069,10 @@ namespace Windows.UI.Xaml.Controls
                 //we add the column for the rows' headers:
                 ColumnDefinition columnDefinitionForHeader = new ColumnDefinition(); //todo: remove the first column when the SelectionMode is Single (do not forget every change it implies)
                 columnDefinitionForHeader.Width = GridLength.Auto;
-                if (SelectionMode == DataGridSelectionMode.Single) //if the selectionMode is Single, we don't want to see the CheckBox.
-                {
-                    //we make sure the first column has a null width:
-                    columnDefinitionForHeader.Width = new GridLength(0);
-                }
+
+                //we make sure the first column has a null width:
+                columnDefinitionForHeader.Width = new GridLength(0);
+
                 _mainGrid.ColumnDefinitions.Add(columnDefinitionForHeader);
 
 
@@ -1259,37 +1267,57 @@ namespace Windows.UI.Xaml.Controls
         private void CellElement_Click(object sender, RoutedEventArgs e)
         {
             DataGridCell cell = (DataGridCell)sender;
-            if (_currentCell != cell)
+            if (SelectionMode == DataGridSelectionMode.Extended)
             {
-                //-----------------------
-                // The clicked cell was not already selected
-                //-----------------------
-
-                if (SelectionMode == DataGridSelectionMode.Single && SelectedItem != null)
+                if (cell.IsSelected)
                 {
-                    UnselectItem(SelectedItem);
+                    UnselectItem(cell.Item);
+                    if (SelectedItems.Count == 0)
+                    {
+                        SelectedIndex = -1;
+                        SelectedItem = null;
+                    }
                 }
-                if (_currentCell != null)
+                else
                 {
-                    LeaveCellEditionMode();
-                }
-                SelectItem(cell.Item);
-                _currentCell = cell;
-
-                // Enter Edit Mode (upon selection) only if the option "EnableTwoStepsEditMode" is not enabled (otherwise the user must first select the cell, like in Silverlight):
-                if (!EnableTwoStepsEditMode)
-                {
-                    EnterCellEditionMode(cell);
+                    SelectItem(cell.Item);
+                    SelectedItem = cell.Item;
                 }
             }
             else
             {
-                //-----------------------
-                // The clicked cell was already selected
-                //-----------------------
+                if (_currentCell != cell)
+                {
+                    //-----------------------
+                    // The clicked cell was not already selected
+                    //-----------------------
 
-                // Enter Edit Mode:
-                EnterCellEditionMode(cell);
+                    if (SelectionMode == DataGridSelectionMode.Single && SelectedItem != null)
+                    {
+                        UnselectItem(SelectedItem);
+                    }
+                    if (_currentCell != null)
+                    {
+                        LeaveCellEditionMode();
+                    }
+                    SelectItem(cell.Item);
+                    _currentCell = cell;
+
+                    // Enter Edit Mode (upon selection) only if the option "EnableTwoStepsEditMode" is not enabled (otherwise the user must first select the cell, like in Silverlight):
+                    if (!EnableTwoStepsEditMode)
+                    {
+                        EnterCellEditionMode(cell);
+                    }
+                }
+                else
+                {
+                    //-----------------------
+                    // The clicked cell was already selected
+                    //-----------------------
+
+                    // Enter Edit Mode:
+                    EnterCellEditionMode(cell);
+                }
             }
         }
 
@@ -1409,7 +1437,9 @@ namespace Windows.UI.Xaml.Controls
                         ((FrameworkElement)_currentEditionElement).DataContext = null; //Note: this is here because we had to set the DataContext locally for this element (since it is directly put in the grid and not in a DataGridCell)
                         _mainGrid.Children.Remove(_currentEditionElement);
                     }
+#if WORKINPROGRESS
                     CellEditEnded?.Invoke(this, new DataGridCellEditEndedEventArgs(_currentCell.Column, new DataGridRow() { DataContext = _currentCell.DataContext }, DataGridEditAction.Commit));
+#endif
                 }
                 _currentCell = null;
                 _currentEditionElement = null;

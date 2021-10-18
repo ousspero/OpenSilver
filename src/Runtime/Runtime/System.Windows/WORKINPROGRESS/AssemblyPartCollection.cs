@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,12 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 #if MIGRATION
 namespace System.Windows
@@ -22,10 +28,6 @@ namespace Windows.UI.Xaml
 	[OpenSilver.NotImplemented]
     public sealed partial class AssemblyPartCollection : PresentationFrameworkCollection<AssemblyPart>
     {
-        public AssemblyPartCollection() : base(false)
-        {
-        }
-
         internal override void AddOverride(AssemblyPart value)
         {
             this.AddDependencyObjectInternal(value);
@@ -44,6 +46,11 @@ namespace Windows.UI.Xaml
         internal override void RemoveAtOverride(int index)
         {
             this.RemoveAtDependencyObjectInternal(index);
+        }
+
+        internal override bool RemoveOverride(AssemblyPart value)
+        {
+            return this.RemoveDependencyObjectInternal(value);
         }
 
         internal override AssemblyPart GetItemOverride(int index)

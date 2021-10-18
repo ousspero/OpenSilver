@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,9 +12,13 @@
 *  
 \*====================================================================================*/
 
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Markup;
 
 #if MIGRATION
@@ -179,6 +184,10 @@ namespace Windows.UI.Xaml.Media.Animation
 
         internal void Begin(FrameworkElement target, bool useTransitions, string visualStateGroupName, bool isVisualStateChange)
         {
+            foreach (var c in Children)
+            {
+                timelines.Add(c);
+            }
             this.IsUnApplied = false; // Note: we set this variable because the animation start is done inside a Dispatcher, so if the user synchronously Starts then Stops then Starts an animation, we want it to be in the started state.
 #if MIGRATION
             Dispatcher
@@ -188,8 +197,10 @@ namespace Windows.UI.Xaml.Media.Animation
             // Note: we use a Dispatcher in order to ensure that the page is fully loaded when starting the animation.
             .INTERNAL_GetCurrentDispatcher().BeginInvoke(() =>
             {
+#if WORKINPROGRESS
                 try
                 {
+#endif
                     if (!this._isUnApplied) // Note: we use this variable because the animation start is done inside a Dispatcher, so if the user Starts then Stops the animation immediately (in the same thread), we want to cancel the start of the animation.
                     {
                         Guid guid = Guid.NewGuid();
@@ -204,18 +215,19 @@ namespace Windows.UI.Xaml.Media.Animation
 
                         InitializeIteration();
 
-                        bool isThisSingleLoop = RepeatBehavior.HasCount && RepeatBehavior.Count == 1;
+                        bool isThisSingleLoop = RepeatBehavior.Type == RepeatBehaviorType.Count && RepeatBehavior.Count == 1;
 
                         StartFirstIteration(parameters, isThisSingleLoop, new TimeSpan()); //todo: use a parameter instead of just a new TimeSpan since we can have a Storyboard inside a Storyboard.
                     }
+#if WORKINPROGRESS
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
                 }
+#endif
             });
         }
-
 
 
         void timeLine_Completed(object sender, EventArgs e)
@@ -226,38 +238,45 @@ namespace Windows.UI.Xaml.Media.Animation
         private int _expectedAmountOfTimelineEnds = 0;
         private Dictionary<Guid, int> _expectedAmountOfTimelineEndsDict = new Dictionary<Guid, int>();
         object thisLock = new object();
+        private HashSet<Timeline> timelines = new HashSet<Timeline>();
+
         internal void NotifyStoryboardOfTimelineEnd(Timeline timeline)
         {
-            HashSet2<Guid> completedguids = timeline.CompletedGuids;
-            List<Guid> guidsDealtWith = new List<Guid>();
-            foreach (Guid guid in completedguids)
+            timelines.Remove(timeline);
+            if (timelines.Count == 0)
             {
-                bool raiseEvent = false;
-                lock (thisLock)
-                {
-                    if (_expectedAmountOfTimelineEndsDict.ContainsKey(guid))
-                    {
-                        int expectedAmount = _expectedAmountOfTimelineEndsDict[guid];
-                        --_expectedAmountOfTimelineEnds;
-                        --expectedAmount;
-                        _expectedAmountOfTimelineEndsDict[guid] = expectedAmount;
-                        guidsDealtWith.Add(guid);
-                        if (expectedAmount <= 0)
-                        {
-                            raiseEvent = true;
-                        }
-                    }
-                }
-                if (raiseEvent)
-                {
-                    OnIterationCompleted(_guidToIterationParametersDict[guid]);
-                    _guidToIterationParametersDict.Remove(guid);
-                }
+                INTERNAL_RaiseCompletedEvent();
             }
-            foreach (Guid guid in guidsDealtWith)
-            {
-                timeline.CompletedGuids.Remove(guid);
-            }
+            //HashSet2<Guid> completedguids = timeline.CompletedGuids;
+            //List<Guid> guidsDealtWith = new List<Guid>();
+            //foreach (Guid guid in completedguids)
+            //{
+            //    bool raiseEvent = false;
+            //    lock (thisLock)
+            //    {
+            //        if (_expectedAmountOfTimelineEndsDict.ContainsKey(guid))
+            //        {
+            //            int expectedAmount = _expectedAmountOfTimelineEndsDict[guid];
+            //            --_expectedAmountOfTimelineEnds;
+            //            --expectedAmount;
+            //            _expectedAmountOfTimelineEndsDict[guid] = expectedAmount;
+            //            guidsDealtWith.Add(guid);
+            //            if (expectedAmount <= 0)
+            //            {
+            //                raiseEvent = true;
+            //            }
+            //        }
+            //    }
+            //    if (raiseEvent)
+            //    {
+            //        OnIterationCompleted(_guidToIterationParametersDict[guid]);
+            //        _guidToIterationParametersDict.Remove(guid);
+            //    }
+            //}
+            //foreach (Guid guid in guidsDealtWith)
+            //{
+            //    timeline.CompletedGuids.Remove(guid);
+            //}
         }
 
         ///// <summary>
@@ -371,7 +390,7 @@ namespace Windows.UI.Xaml.Media.Animation
         /// </summary>
         public void Stop(FrameworkElement frameworkElement)
         {
-            Stop(frameworkElement, revertToFormerValue: true);
+            ((Timeline)this).Stop(frameworkElement, revertToFormerValue: true);
             foreach (Timeline timeLine in _children)
             {
                 timeLine.Stop(frameworkElement, revertToFormerValue: true);
@@ -428,7 +447,7 @@ namespace Windows.UI.Xaml.Media.Animation
                     {
                         currentParameters.IsTargetParentTheTarget = false;
                     }
-                    bool isTimelineSingleLoop = timeLine.RepeatBehavior.HasCount && timeLine.RepeatBehavior.Count == 1;
+                    bool isTimelineSingleLoop = timeLine.RepeatBehavior.Type == RepeatBehaviorType.Count && timeLine.RepeatBehavior.Count == 1;
                     timeLine.StartFirstIteration(currentParameters, isTimelineSingleLoop, BeginTime);
                 }
             }
@@ -436,17 +455,21 @@ namespace Windows.UI.Xaml.Media.Animation
             {
                 foreach (Timeline timeLine in _children)
                 {
-                    DependencyObject target = GetTarget(timeLine);
-                    parameters.Target = target;
-                    timeLine.Completed -= timeLine_Completed;
-                    timeLine.Completed += timeLine_Completed;
-                    parameters.VisualStateGroupName = "visualStateGroupName";
-                    parameters.IsTargetParentTheTarget = false;
-                    bool isTimelineSingleLoop = timeLine.RepeatBehavior.HasCount && timeLine.RepeatBehavior.Count == 1;
-                    timeLine.StartFirstIteration(parameters, isTimelineSingleLoop, BeginTime);
+                    DependencyObject target = Storyboard.GetTarget(timeLine);
+                    if (target is FrameworkElement)
+                    {
+                        parameters.Target = (FrameworkElement)target;
+                        timeLine.Completed -= timeLine_Completed;
+                        timeLine.Completed += timeLine_Completed;
+                        parameters.VisualStateGroupName = "visualStateGroupName";
+                        parameters.IsTargetParentTheTarget = false;
+                        bool isTimelineSingleLoop = timeLine.RepeatBehavior.Type == RepeatBehaviorType.Count && timeLine.RepeatBehavior.Count == 1;
+                        timeLine.StartFirstIteration(parameters, isTimelineSingleLoop, BeginTime);
+                    }
                 }
             }
         }
+
 
         [OpenSilver.NotImplemented]
         public ClockState GetCurrentState()
@@ -487,7 +510,7 @@ namespace Windows.UI.Xaml.Media.Animation
     /// </summary>
     internal partial class IterationParameters
     {
-        internal DependencyObject Target;
+        internal FrameworkElement Target;
         internal Guid Guid;
         internal bool UseTransitions;
         internal string VisualStateGroupName;

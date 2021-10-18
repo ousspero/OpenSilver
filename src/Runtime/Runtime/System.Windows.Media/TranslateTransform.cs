@@ -53,7 +53,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(X), 
                 typeof(double), 
                 typeof(TranslateTransform), 
-                new PropertyMetadata(0d, OnXChanged)
+                new PropertyMetadata(0d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -77,11 +77,6 @@ namespace Windows.UI.Xaml.Media
                     }
                 });
 
-        private static void OnXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((TranslateTransform)d).RaiseTransformChanged();
-        }
-
         /// <summary>
         /// Gets or sets the distance to translate (move) an object along the y-axis.
         /// </summary>
@@ -98,7 +93,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(Y), 
                 typeof(double), 
                 typeof(TranslateTransform), 
-                new PropertyMetadata(0d, OnYChanged)
+                new PropertyMetadata(0d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -121,11 +116,6 @@ namespace Windows.UI.Xaml.Media
                         return null;
                     }
                 });
-
-        private static void OnYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((TranslateTransform)d).RaiseTransformChanged();
-        }
 
         private void ApplyCSSChanges(double x, double y)
         {
@@ -178,7 +168,7 @@ namespace Windows.UI.Xaml.Media
             }
         }
 
-        internal override Matrix ValueInternal
+        internal override Matrix Value
         {
             get
             {

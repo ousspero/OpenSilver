@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,14 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
+#if MIGRATION
+using System.Windows;
+#else
+using Windows.UI.Xaml;
+#endif
 
 #if MIGRATION
 namespace System.Windows.Media.Animation
@@ -21,10 +29,6 @@ namespace Windows.UI.Xaml.Media.Animation
 {
     public sealed partial class DoubleKeyFrameCollection : PresentationFrameworkCollection<DoubleKeyFrame>
     {
-        public DoubleKeyFrameCollection() : base(false)
-        {
-        }
-
         internal override void AddOverride(DoubleKeyFrame keyFrame)
         {
             this.AddDependencyObjectInternal(keyFrame);
@@ -43,6 +47,11 @@ namespace Windows.UI.Xaml.Media.Animation
         internal override void RemoveAtOverride(int index)
         {
             this.RemoveAtDependencyObjectInternal(index);
+        }
+
+        internal override bool RemoveOverride(DoubleKeyFrame keyFrame)
+        {
+            return this.RemoveDependencyObjectInternal(keyFrame);
         }
 
         internal override DoubleKeyFrame GetItemOverride(int index)

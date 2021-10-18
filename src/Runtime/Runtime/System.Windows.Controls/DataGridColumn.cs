@@ -14,8 +14,10 @@
 
 
 using CSHTML5.Internal;
+using System.Linq;
 #if MIGRATION
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 #else
 using Windows.UI.Xaml.Controls.Primitives;
 #endif
@@ -326,7 +328,18 @@ namespace Windows.UI.Xaml.Controls
 
         private void Header_OnClick(object sender, RoutedEventArgs e)
         {
-            //todo: sort
+            DataGridColumnHeader header = sender as DataGridColumnHeader;
+            string column = header.Content.ToString();
+            var s = _parent.PagedView.SortDescriptions.Where(x => x.PropertyName == column).FirstOrDefault();
+
+            var direction = ComponentModel.ListSortDirection.Ascending;
+            if (s != null)
+            {
+                direction = s.Direction == ComponentModel.ListSortDirection.Ascending ? ComponentModel.ListSortDirection.Descending : ComponentModel.ListSortDirection.Ascending;
+            }
+
+            _parent.PagedView.SortDescriptions.Clear();
+            _parent.PagedView.SortDescriptions.Add(new PropertySortDescription(column, direction));
         }
 
         internal DataGridColumnHeader GetHeader()

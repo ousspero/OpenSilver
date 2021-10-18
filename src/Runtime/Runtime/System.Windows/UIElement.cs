@@ -269,22 +269,17 @@ namespace Windows.UI.Xaml
 
         private static void Clip_MethodToUpdateDom(DependencyObject d, object newValue)
         {
-            if (newValue == null)
-            {
-                UIElement uiElement = (UIElement)d;
-                var outerDomElement = uiElement.INTERNAL_OuterDomElement;
-                var style = INTERNAL_HtmlDomManager.GetDomElementStyleForModification(outerDomElement);
-                style.clip = "";
-                return;
-            }
-
             // Only RectangleGeometry is supported for now
-            if (newValue is RectangleGeometry)
+            if (newValue != null && newValue is RectangleGeometry)
             {
                 UIElement uiElement = (UIElement)d;
                 var outerDomElement = uiElement.INTERNAL_OuterDomElement;
                 var style = INTERNAL_HtmlDomManager.GetDomElementStyleForModification(outerDomElement);
                 RectangleGeometry val = (RectangleGeometry)newValue;
+
+                // Get elements width and height
+                double width = Convert.ToDouble(INTERNAL_HtmlDomManager.GetDomElementAttribute(outerDomElement, "offsetWidth"));
+                double height = Convert.ToDouble(INTERNAL_HtmlDomManager.GetDomElementAttribute(outerDomElement, "offsetHeight"));
 
                 // CSS rect property has the following format - rect(<top>, <right>, <bottom>, <left>)
                 double top = val.Rect.Y;
@@ -292,7 +287,7 @@ namespace Windows.UI.Xaml
                 double bottom = val.Rect.Height + val.Rect.Y;
                 double left = val.Rect.X;
 
-                string rect = "rect(" + top.ToInvariantString() + "px, " + right.ToInvariantString() + "px" + ", " + bottom.ToInvariantString() + "px, " + left.ToInvariantString() + "px)";
+                string rect = "rect(" + top + "px, " + right + "px" + ", " + bottom + "px, " + left + "px)";
                 style.clip = rect;
             }
             else
@@ -1013,7 +1008,63 @@ namespace Windows.UI.Xaml
                 else
                 {
                     string uid = ((INTERNAL_HtmlDomElementReference)element).UniqueIdentifier;
-                    string javaScriptCodeToExecute = $@"document.rerouteMouseEvents(""{uid}"")";
+                    string javaScriptCodeToExecute = $@"
+     document.onmouseup = function(e) {{
+        if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}
+     document.onmouseover = function(e) {{
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }} 
+    document.onmousedown = function(e) {{
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}                       
+     document.onmouseout = function(e) {{   
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}                            
+     document.onmousemove = function(e) {{
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}                                    
+     document.onclick = function(e) {{   
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}                                     
+     document.oncontextmenu = function(e) {{
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}                                      
+     document.ondblclick = function(e) {{   
+       if(e.doNotReroute == undefined)
+        {{
+               var element = document.getElementByIdSafe(""{uid}"");
+               document.reroute(e, element);
+        }}
+    }}";
                     INTERNAL_HtmlDomManager.ExecuteJavaScriptWithResult(javaScriptCodeToExecute);
                 }
                 return true;

@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,12 +12,16 @@
 *  
 \*====================================================================================*/
 
+
+using CSHTML5.Internal;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows.Markup;
-using CSHTML5.Internal;
 
 #if MIGRATION
 namespace System.Windows.Data
@@ -24,76 +29,43 @@ namespace System.Windows.Data
 namespace Windows.UI.Xaml.Data
 #endif
 {
-    internal class StandardPropertyPathNode : PropertyPathNode
+    class StandardPropertyPathNode : PropertyPathNode
     {
-        private readonly string _propertyName;
-        private readonly bool _bindsDirectlyToSource;
+        //private string _STypeName;
+        private string _propertyName;
+        internal bool BindsDirectlyToSource = false;
+        //PropertyInfo PropertyInfo;
+        private IPropertyChangedListener _dependencyPropertyListener;
 
-        private IPropertyChangedListener _dpListener;
-        private DependencyProperty _dp;
-        private PropertyInfo _prop;
-        private FieldInfo _field;
-
-        internal StandardPropertyPathNode(string typeName, string propertyName)
-        {
+        internal StandardPropertyPathNode(string typeName, string propertyName) {
+            //_STypeName = typeName;
             _propertyName = propertyName;
         }
 
         /// <summary>
-        /// This constructor is called only when there is no path, which means 
-        /// that the binding's source is directly the value we are looking for.
+        /// This constructor is called only when there is no path, which means that the binding's source is directly the value we are looking for.
         /// </summary>
-        internal StandardPropertyPathNode()
-        {
-            _bindsDirectlyToSource = true;
+        internal StandardPropertyPathNode() {
+            BindsDirectlyToSource = true;
         }
 
-        internal override Type TypeImpl
-        {
-            get
-            {
-                if (_dp != null)
-                {
-                    return _dp.PropertyType;
-                }
-
-                if (_prop != null)
-                {
-                    return _prop.PropertyType;
-                }
-
-                if (_field != null)
-                {
-                    return _field.FieldType;
-                }
-
-                return null;
-            }
+        internal override void SetValue(object value) {
+            if (DependencyProperty != null)
+                ((DependencyObject)Source).SetValue(DependencyProperty, value);
+            else if (PropertyInfo != null)
+                this.PropertyInfo.SetValue(this.Source, value);
+            else if (FieldInfo != null)
+                this.FieldInfo.SetValue(this.Source, value);
         }
 
-        internal override void SetValue(object value)
-        {
-            if (_dp != null)
+        internal override void UpdateValue() {
+            if (DependencyProperty != null)
             {
-                ((DependencyObject)Source).SetValue(_dp, value);
-            }
-            else if (_prop != null)
-            {
-                _prop.SetValue(Source, value);
-            }
-            else if (_field != null)
-            {
-                _field.SetValue(Source, value);
-            }
-        }
+                //this.ValueType = this.DependencyProperty.GetTargetType();
 
-        internal override void UpdateValue()
-        {
-            if (_dp != null)
-            {
-                UpdateValueAndIsBroken(((DependencyObject)Source).GetValue(_dp), CheckIsBroken());
+                UpdateValueAndIsBroken(((DependencyObject)Source).GetValue(DependencyProperty), CheckIsBroken());
             }
-            else if (_prop != null)
+            else if (PropertyInfo != null)
             {
                 //TODO: this.ValueType = PropertyInfo.PropertyType;
                 //this.ValueType = null; //todo: don't know what this is for
@@ -103,18 +75,18 @@ namespace Windows.UI.Xaml.Data
                     //Bridge throws an exception when trying to call GetValue through PropertyInfo.GetValue on a Static Property while putting an instance as a parameter (which should not be the case in my opinion).
                     //Because of that, we need to check whether the property is Static and then accordingly call GetValue with either null or the instance as a parameter.
                     object propertyValue = null;
-                    MethodInfo methodInfo = _prop.GetMethod;
+                    MethodInfo methodInfo = PropertyInfo.GetMethod;
                     if (INTERNAL_BridgeWorkarounds.MethodInfoIsStatic_SimulatorCompatible(methodInfo))
                     {
-                        propertyValue = _prop.GetValue(null);
+                        propertyValue = PropertyInfo.GetValue(null);
                     }
                     else
                     {
-                        propertyValue = _prop.GetValue(this.Source);
+                        propertyValue = PropertyInfo.GetValue(this.Source);
                     }
                     UpdateValueAndIsBroken(propertyValue, CheckIsBroken());
 #else
-                    UpdateValueAndIsBroken(_prop.GetValue(this.Source), CheckIsBroken());
+                    UpdateValueAndIsBroken(PropertyInfo.GetValue(this.Source), CheckIsBroken());
 #endif
                 }
                 catch
@@ -122,116 +94,99 @@ namespace Windows.UI.Xaml.Data
                     UpdateValueAndIsBroken(null, CheckIsBroken());
                 }
             }
-            else if (_field != null)
+            else if (FieldInfo != null)
             {
                 try
                 {
-                    UpdateValueAndIsBroken(_field.GetValue(Source), CheckIsBroken());
+                    UpdateValueAndIsBroken(FieldInfo.GetValue(this.Source), CheckIsBroken());
                 }
                 catch
                 {
                     UpdateValueAndIsBroken(null, CheckIsBroken());
                 }
             }
-            else if (_bindsDirectlyToSource)
+            else if (BindsDirectlyToSource)
             {
-                UpdateValueAndIsBroken(Source, CheckIsBroken());
+                this.UpdateValueAndIsBroken(Source, CheckIsBroken(BindsDirectlyToSource));
             }
             else
             {
-                UpdateValueAndIsBroken(null, CheckIsBroken());
+                //this.ValueType = null;
+                this.UpdateValueAndIsBroken(null, CheckIsBroken());
             }
         }
 
-        internal override void OnSourceChanged(object oldValue, object newValue)
+        internal override void OnSourceChanged(object oldvalue, object newValue)
         {
-            if (oldValue is INotifyPropertyChanged inpc)
-            {
-                inpc.PropertyChanged -= new PropertyChangedEventHandler(OnSourcePropertyChanged);
-            }
+            DependencyObject oldSource = oldvalue as DependencyObject;
+            DependencyObject newSource = newValue as DependencyObject;
 
-            IPropertyChangedListener listener = _dpListener;
+            var listener = _dependencyPropertyListener;
             if (listener != null)
             {
-                _dpListener = null;
                 listener.Detach();
+                _dependencyPropertyListener = listener = null;
             }
 
-            _dp = null;
-            _prop = null;
-            _field = null;
-
+            DependencyProperty = null;
+            PropertyInfo = null;
+            FieldInfo = null;
             if (Source == null)
                 return;
 
-            if (_bindsDirectlyToSource)
-                return;
-
-            inpc = newValue as INotifyPropertyChanged;
-            if (inpc != null)
+            if (newSource != null)
             {
-                inpc.PropertyChanged += new PropertyChangedEventHandler(OnSourcePropertyChanged);
-            }
-
-            if (newValue is DependencyObject sourceDO)
-            {
-                Type type = Source.GetType();
-                DependencyProperty dependencyProperty = INTERNAL_TypeToStringsToDependencyProperties.GetPropertyInTypeOrItsBaseTypes(type, _propertyName);
-
-                if (dependencyProperty != null)
+                if (!BindsDirectlyToSource)
                 {
-                    _dp = dependencyProperty;
-                    _dpListener = listener = INTERNAL_PropertyStore.ListenToChanged(sourceDO, dependencyProperty, OnPropertyChanged);
-                }
+                    DependencyProperty dependencyProperty;
+                    if (_propertyName == "DataContext")
+                    {
+                        dependencyProperty = FrameworkElement.DataContextProperty;
+                    }
+                    else
+                    {
+                        Type type = Source.GetType();
+                        dependencyProperty = INTERNAL_TypeToStringsToDependencyProperties.GetPropertyInTypeOrItsBaseTypes(type, _propertyName);
+                    }
+
+                    if (dependencyProperty != null)
+                    {
+                        this.DependencyProperty = dependencyProperty;
+                        this._dependencyPropertyListener = listener = INTERNAL_PropertyStore.ListenToChanged(newSource, dependencyProperty, this.OnPropertyChanged);
+                    }
+                } //else (if there is no path), we don't need a listener because changing the source will directly call this method.
             }
 
             //todo: support attached DependencyProperties
-            if (_dp == null)// || !this.DependencyProperty.IsAttached)
+            if (DependencyProperty == null)// || !this.DependencyProperty.IsAttached)
             {
-                Type sourceType = Source.GetType();
-                for (Type t = sourceType; t != null; t = t.BaseType)
+                if (!BindsDirectlyToSource)
                 {
-                    _prop = t.GetProperty(
-                        _propertyName,
-                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly
-                    );
-
-                    if (_prop != null)
+                    Type sourceType = Source.GetType();
+                    for (Type t = sourceType; t != null;  t = t.BaseType)
                     {
-                        break;
+                        if ((this.PropertyInfo = t.GetProperty(this._propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)) != null)
+                        {
+                            break;
+                        }
+                    }
+                    if (this.PropertyInfo == null)
+                    {
+                        // Try in case it is a simple field instead of a property:
+                        this.FieldInfo = sourceType.GetField(_propertyName);
                     }
                 }
-
-                if (_prop == null)
-                {
-                    // Try in case it is a simple field instead of a property:
-                    _field = sourceType.GetField(_propertyName);
-                }
             }
         }
 
-        private void OnSourcePropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if ((e.PropertyName == _propertyName || string.IsNullOrEmpty(e.PropertyName)) && (_prop != null || _field != null))
-            {
-                UpdateValue();
-
-                IPropertyPathNode next = Next;
-                if (next != null)
-                {
-                    next.SetSource(Value);
-                }
-            }
-        }
-
-        private void OnPropertyChanged(object sender, IDependencyPropertyChangedEventArgs args)
+        internal void OnPropertyChanged(object sender, IDependencyPropertyChangedEventArgs args)
         {
             try
             {
-                UpdateValue();
+                this.UpdateValue();
                 if (Next != null)
                 {
-                    Next.SetSource(Value);
+                    Next.SetSource(this.Value);
                 }
             }
             catch (XamlParseException ex)
@@ -248,9 +203,15 @@ namespace Windows.UI.Xaml.Data
             }
         }
 
-        private bool CheckIsBroken()
+        internal override void OnSourcePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            return Source == null || (!_bindsDirectlyToSource && (_prop == null && _field == null && _dp == null));
+            if ((e.PropertyName == _propertyName || string.IsNullOrEmpty(e.PropertyName)) && (PropertyInfo != null || FieldInfo != null))
+            {
+                this.UpdateValue();
+                var next = this.Next;
+                if (next != null)
+                    next.SetSource(this.Value);
+            }
         }
     }
 }

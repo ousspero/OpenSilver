@@ -1,4 +1,5 @@
 ﻿
+
 /*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
@@ -11,7 +12,11 @@
 *  
 \*====================================================================================*/
 
+
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 #if MIGRATION
 namespace System.Windows.Data
@@ -19,22 +24,15 @@ namespace System.Windows.Data
 namespace Windows.UI.Xaml.Data
 #endif
 {
-    internal interface IPropertyPathNode
+    internal partial interface IPropertyPathNode
     {
-        IPropertyPathNode Next { get; set; }
-
+        IPropertyPathNode Next {get; set;}
         object Value { get; }
-
-        Type Type { get; }
-        
         bool IsBroken { get; }
-        
+        //internal IType ValueType;
         void SetSource(object source);
-        
         void SetValue(object value);
-        
         void Listen(IPropertyPathNodeListener listener);
-        
         void Unlisten(IPropertyPathNodeListener listener);
     }
 }

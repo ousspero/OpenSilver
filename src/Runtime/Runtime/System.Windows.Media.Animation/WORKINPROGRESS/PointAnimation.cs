@@ -1,15 +1,5 @@
-
-/*===================================================================================
-* 
-*   Copyright (c) Userware/OpenSilver.net
-*      
-*   This file is part of the OpenSilver Runtime (https://opensilver.net), which is
-*   licensed under the MIT license: https://opensource.org/licenses/MIT
-*   
-*   As stated in the MIT license, "the above copyright notice and this permission
-*   notice shall be included in all copies or substantial portions of the Software."
-*  
-\*====================================================================================*/
+using System.Windows;
+using System;
 
 #if !MIGRATION
 using Windows.Foundation;
@@ -21,133 +11,60 @@ namespace System.Windows.Media.Animation
 namespace Windows.UI.Xaml.Media.Animation
 #endif
 {
-    /// <summary>
-    /// Animates the value of a <see cref="Point"/> property between two target values
-    /// using linear interpolation over a specified <see cref="Timeline.Duration"/>.
-    /// </summary>
-    public sealed partial class PointAnimation : AnimationTimeline
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointAnimation"/>
-        /// class.
-        /// </summary>
-        public PointAnimation()
-        {
-        }
+    [OpenSilver.NotImplemented]
+	public sealed partial class PointAnimation : Timeline
+	{
+        [OpenSilver.NotImplemented]
+		public static readonly DependencyProperty FromProperty = DependencyProperty.Register(nameof(From), typeof(Nullable<Point>), typeof(PointAnimation), new PropertyMetadata());
+        [OpenSilver.NotImplemented]
+		public static readonly DependencyProperty ToProperty = DependencyProperty.Register(nameof(To), typeof(Nullable<Point>), typeof(PointAnimation), new PropertyMetadata());
+        [OpenSilver.NotImplemented]
+		public static readonly DependencyProperty ByProperty = DependencyProperty.Register(nameof(By), typeof(Nullable<Point>), typeof(PointAnimation), new PropertyMetadata());
+        [OpenSilver.NotImplemented]
+		public Nullable<Point> From
+		{
+			get
+			{
+				return (Nullable<Point>)this.GetValue(PointAnimation.FromProperty);
+			}
 
-        /// <summary>
-        /// Identifies the <see cref="By"/> dependency property.
-        /// </summary>
-        public static readonly DependencyProperty ByProperty =
-            DependencyProperty.Register(
-                nameof(By),
-                typeof(Point?),
-                typeof(PointAnimation),
-                new PropertyMetadata((object)null));
+			set
+			{
+				this.SetValue(PointAnimation.FromProperty, value);
+			}
+		}
 
-        /// <summary>
-        /// Gets or sets the total amount by which the animation changes its starting value.
-        /// The default is null.
-        /// </summary>
-        public Point? By
-        {
-            get { return (Point?)this.GetValue(ByProperty); }
-            set { this.SetValue(ByProperty, value); }
-        }
+        [OpenSilver.NotImplemented]
+		public Nullable<Point> To
+		{
+			get
+			{
+				return (Nullable<Point>)this.GetValue(PointAnimation.ToProperty);
+			}
 
-        /// <summary>
-        /// Identifies the <see cref="EasingFunction"/> dependency
-        /// property.
-        /// </summary>
-        public static readonly DependencyProperty EasingFunctionProperty =
-            DependencyProperty.Register(
-                nameof(EasingFunction),
-                typeof(IEasingFunction),
-                typeof(PointAnimation),
-                new PropertyMetadata((object)null));
+			set
+			{
+				this.SetValue(PointAnimation.ToProperty, value);
+			}
+		}
 
-        /// <summary>
-        /// Gets or sets the easing function you are applying to the animation.
-        /// The default is null.
-        /// </summary>
-        public IEasingFunction EasingFunction
-        {
-            get { return (EasingFunctionBase)GetValue(EasingFunctionProperty); }
-            set { SetValue(EasingFunctionProperty, value); }
-        }
+        [OpenSilver.NotImplemented]
+		public Nullable<Point> By
+		{
+			get
+			{
+				return (Nullable<Point>)this.GetValue(PointAnimation.ByProperty);
+			}
 
-        /// <summary>
-        /// Identifies the <see cref="From"/> dependency property.
-        /// </summary>
-        public static readonly DependencyProperty FromProperty = 
-            DependencyProperty.Register(
-                nameof(From), 
-                typeof(Point?), 
-                typeof(PointAnimation),
-                new PropertyMetadata((object)null));
+			set
+			{
+				this.SetValue(PointAnimation.ByProperty, value);
+			}
+		}
 
-        /// <summary>
-        /// Gets or sets the animation's starting value. The default is null.
-        /// </summary>
-        public Point? From
-        {
-            get { return (Point?)this.GetValue(FromProperty); }
-            set { this.SetValue(FromProperty, value); }
-        }
-
-        /// <summary>
-        /// Identifies the <see cref="To"/> dependency property.
-        /// </summary>
-        public static readonly DependencyProperty ToProperty =
-            DependencyProperty.Register(
-                nameof(To),
-                typeof(Point?),
-                typeof(PointAnimation),
-                new PropertyMetadata((object)null));
-
-        /// <summary>
-        /// Gets or sets the animation's ending value. The default is null.
-        /// </summary>
-        public Point? To
-        {
-            get { return (Point?)this.GetValue(ToProperty); }
-            set { this.SetValue(ToProperty, value); }
-        }
-
-        internal override void GetTargetInformation(IterationParameters parameters)
-        {
-            _parameters = parameters;
-            DependencyObject target;
-            PropertyPath propertyPath;
-
-            GetTargetElementAndPropertyInfo(parameters.Target, out target, out propertyPath, parameters.IsTargetParentTheTarget);
-
-            _propertyContainer = target;
-            _targetProperty = propertyPath;
-            _propDp = GetProperty(_propertyContainer, _targetProperty);
-            _target = Storyboard.GetTarget(this);
-            _targetName = Storyboard.GetTargetName(this);
-        }
-
-        internal override void Apply(IterationParameters parameters, bool isLastLoop)
-        {
-            if (To != null)
-            {
-                OnAnimationCompleted(parameters, isLastLoop, To.Value, _propertyContainer, _targetProperty);
-            }
-        }
-
-        private void OnAnimationCompleted(IterationParameters parameters, bool isLastLoop, object value, DependencyObject target, PropertyPath propertyPath)
-        {
-            if (!this._isUnapplied)
-            {
-                if (isLastLoop)
-                {
-                    AnimationHelpers.ApplyValue(target, propertyPath, value, parameters.IsVisualStateChange);
-                }
-
-                OnIterationCompleted(parameters);
-            }
-        }
-    }
+        [OpenSilver.NotImplemented]
+		public PointAnimation()
+		{
+		}
+	}
 }

@@ -12,10 +12,9 @@
 *  
 \*====================================================================================*/
 
+using CSHTML5.Internal;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using CSHTML5.Internal;
 using OpenSilver.Internal;
 
 #if MIGRATION
@@ -347,8 +346,6 @@ namespace Windows.UI.Xaml
 #if PERFSTAT
             var t0 = Performance.now();
 #endif
-            if (fe.IsUnderCustomLayout)
-                return;
 
             if (INTERNAL_VisualTreeManager.IsElementInVisualTree(fe)
                 && fe.Visibility != Visibility.Collapsed)

@@ -53,7 +53,7 @@ namespace Windows.UI.Xaml.Media
                 nameof(Angle), 
                 typeof(double), 
                 typeof(RotateTransform), 
-                new PropertyMetadata(0d, OnAngleChanged)
+                new PropertyMetadata(0d)
                 {
                     GetCSSEquivalent = (instance) =>
                     {
@@ -76,11 +76,6 @@ namespace Windows.UI.Xaml.Media
                         return null;
                     }
                 });
-
-        private static void OnAngleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((RotateTransform)d).RaiseTransformChanged();
-        }
 
         private void ApplyCSSChanges(double angle)
         {
@@ -117,7 +112,7 @@ namespace Windows.UI.Xaml.Media
             }
         }
 
-        internal override Matrix ValueInternal
+        internal override Matrix Value
         {
             get
             {

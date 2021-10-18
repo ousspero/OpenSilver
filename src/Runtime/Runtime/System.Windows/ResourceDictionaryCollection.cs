@@ -1,5 +1,4 @@
-﻿
-/*===================================================================================
+﻿/*===================================================================================
 * 
 *   Copyright (c) Userware/OpenSilver.net
 *      
@@ -12,7 +11,10 @@
 \*====================================================================================*/
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
+
 
 #if MIGRATION
 namespace System.Windows
@@ -22,44 +24,77 @@ namespace Windows.UI.Xaml
 {
     internal class ResourceDictionaryCollection : PresentationFrameworkCollection<ResourceDictionary>
     {
-        private readonly ResourceDictionary _owner;
+        #region Data
 
-        internal ResourceDictionaryCollection(ResourceDictionary owner) : base(true)
+        private ResourceDictionary _owner;
+        private SimpleMonitor _monitor = new SimpleMonitor();
+
+        #endregion
+
+        #region Constructor
+
+        internal ResourceDictionaryCollection(ResourceDictionary owner)
         {
             Debug.Assert(owner != null, "ResourceDictionaryCollection's owner cannot be null");
             this._owner = owner;
         }
 
+        #endregion
+
+        #region Overriden Methods
+
         internal override void AddOverride(ResourceDictionary value)
         {
-            CheckValue(value);
+            this.CheckReentrancy();
+            this.CheckValue(value);
             this.AddInternal(value);
             value._parentDictionary = this._owner;
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, this.CountInternal));
         }
 
         internal override void ClearOverride()
         {
+            this.CheckReentrancy();
             foreach (ResourceDictionary dictionary in this)
             {
                 dictionary._parentDictionary = null;
                 this._owner.RemoveParentOwners(dictionary);
             }
-
             this.ClearInternal();
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
         internal override void InsertOverride(int index, ResourceDictionary value)
         {
-            CheckValue(value);
+            this.CheckReentrancy();
+            this.CheckValue(value);
             this.InsertInternal(index, value);
             value._parentDictionary = this._owner;
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, index));
         }
 
         internal override void RemoveAtOverride(int index)
         {
+            this.CheckReentrancy();
             ResourceDictionary removedItem = this.GetItemInternal(index);
             this.RemoveAtInternal(index);
             removedItem._parentDictionary = null;
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+        }
+
+        internal override bool RemoveOverride(ResourceDictionary value)
+        {
+            this.CheckReentrancy();
+            int index = this.IndexOf(value);
+            if (index > -1)
+            {
+                ResourceDictionary removedItem = this.GetItemInternal(index);
+                this.RemoveAtInternal(index);
+                removedItem._parentDictionary = null;
+                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+                return true;
+            }
+            return false;
         }
 
         internal override ResourceDictionary GetItemOverride(int index)
@@ -69,19 +104,104 @@ namespace Windows.UI.Xaml
 
         internal override void SetItemOverride(int index, ResourceDictionary value)
         {
-            CheckValue(value);
+            this.CheckReentrancy();
+            this.CheckValue(value);
             ResourceDictionary originalItem = this.GetItemInternal(index);
             this.SetItemInternal(index, value);
             originalItem._parentDictionary = null;
             value._parentDictionary = this._owner;
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, originalItem, index));
         }
 
-        private static void CheckValue(ResourceDictionary value)
+        #endregion
+
+        #region Events (CollectionChanged)
+
+        internal event NotifyCollectionChangedEventHandler CollectionChanged;
+
+        #endregion
+
+        #region Private Methods
+
+        private void CheckValue(ResourceDictionary value)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
             if (value._parentDictionary != null)
             {
                 throw new InvalidOperationException("Element is already the child of another element.");
             }
         }
+
+        private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+        {
+            if (this.CollectionChanged != null)
+            {
+                using (this.BlockReentrancy())
+                {
+                    this.CollectionChanged(this, e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Disallow reentrant attempts to change this collection. E.g. a event handler
+        /// of the CollectionChanged event is not allowed to make changes to this collection.
+        /// </summary>
+        /// <remarks>
+        /// typical usage is to wrap e.g. a OnCollectionChanged call with a using() scope:
+        /// <code>
+        ///         using (BlockReentrancy())
+        ///         {
+        ///             CollectionChanged(this, new NotifyCollectionChangedEventArgs(action, item, index));
+        ///         }
+        /// </code>
+        /// </remarks>
+        private IDisposable BlockReentrancy()
+        {
+            _monitor.Enter();
+            return _monitor;
+        }
+
+        /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
+        /// <exception cref="InvalidOperationException"> raised when changing the collection
+        /// while another collection change is still being notified to other listeners </exception>
+        private void CheckReentrancy()
+        {
+            if (_monitor.Busy)
+            {
+                // we can allow changes if there's only one listener - the problem
+                // only arises if reentrant changes make the original event args
+                // invalid for later listeners.  This keeps existing code working
+                // (e.g. Selector.SelectedItems).
+                if ((CollectionChanged != null) && (CollectionChanged.GetInvocationList().Length > 1))
+                    throw new InvalidOperationException("RowDefinitionCollection Reentrancy not allowed");
+            }
+        }
+
+        #endregion
+
+        #region Private classes
+
+        private class SimpleMonitor : IDisposable
+        {
+            public void Enter()
+            {
+                ++_busyCount;
+            }
+
+            public void Dispose()
+            {
+                --_busyCount;
+            }
+
+            public bool Busy { get { return _busyCount > 0; } }
+
+            int _busyCount;
+        }
+
+        #endregion
     }
 }

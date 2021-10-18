@@ -438,6 +438,14 @@ namespace Windows.UI.Xaml
                     {
                         visualsCreated = true;
                     }
+                    else if (this is TextBox)
+                    {
+                        visualChild = template.INTERNAL_InstantiateFrameworkTemplate(this);
+                        if (visualChild != null)
+                        {
+                            visualsCreated = true;
+                        }
+                    }
                 }
             }
 
