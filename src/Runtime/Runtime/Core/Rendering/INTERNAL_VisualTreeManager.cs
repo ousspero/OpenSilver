@@ -160,10 +160,10 @@ namespace CSHTML5.Internal
                 }
                 else
                 {
-                    throw new Exception(
-                        string.Format("Cannot detach the element '{0}' because it is not a child of the element '{1}'.",
-                                      child.GetType().ToString(),
-                                      parent.GetType().ToString()));
+                    //throw new Exception(
+                    //    string.Format("Cannot detach the element '{0}' because it is not a child of the element '{1}'.",
+                    //                  child.GetType().ToString(),
+                    //                  parent.GetType().ToString()));
                 }
             }
 #if PERFSTAT
