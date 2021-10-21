@@ -109,7 +109,6 @@ namespace Windows.UI.Xaml.Controls
             set => SetValue(RowStyleProperty, value);
         }
 
-
         private static void OnRowStylePropertyChanged(
             DependencyObject d,
             DependencyPropertyChangedEventArgs e)

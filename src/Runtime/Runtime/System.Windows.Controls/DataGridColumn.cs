@@ -69,6 +69,76 @@ namespace Windows.UI.Xaml.Controls
         }
 
         /// <summary>
+        /// Holds the name of the member to use for sorting, if not using the default.
+        /// </summary>
+        public string SortMemberPath
+        {
+            get;
+            set;
+        }
+
+        internal DataGrid OwningGrid
+        {
+            get;
+            set;
+        }
+
+        internal bool? CanUserSortInternal
+        {
+            get;
+            set;
+        }
+        public bool CanUserSort
+        {
+            get
+            {
+                if (this.CanUserSortInternal.HasValue)
+                {
+                    return this.CanUserSortInternal.Value;
+                }
+                else if (this.OwningGrid != null)
+                {
+                    string propertyPath = GetSortPropertyName();
+                    Type propertyType = this.OwningGrid.DataConnection.DataType.GetNestedType(propertyPath);
+
+                    // if the type is nullable, then we will compare the non-nullable type
+                    if (Common.TypeHelper.IsNullableType(propertyType))
+                    {
+                        propertyType = Common.TypeHelper.GetNonNullableType(propertyType);
+                    }
+
+                    // return whether or not the property type can be compared
+                    return (typeof(IComparable).IsAssignableFrom(propertyType)) ? true : false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set
+            {
+                this.CanUserSortInternal = value;
+            }
+        }
+
+        internal string GetSortPropertyName()
+        {
+            string result = this.SortMemberPath;
+
+            if (String.IsNullOrEmpty(result))
+            {
+                DataGridBoundColumn boundColumn = this as DataGridBoundColumn;
+                PropertyPath memberPath = ((Binding)boundColumn.Binding).Path;
+                if (boundColumn != null && boundColumn.Binding != null && memberPath != null)
+                {
+                    result = memberPath.Path;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// This method allows to set the header's style without changing the DataGridColumn's 
         /// HeaderStyle Property. This way, we will still be able to set a new header via 
         /// DataGrid's ColumnHeaderStyle property.
@@ -328,18 +398,21 @@ namespace Windows.UI.Xaml.Controls
 
         private void Header_OnClick(object sender, RoutedEventArgs e)
         {
-            DataGridColumnHeader header = sender as DataGridColumnHeader;
-            string column = header.Content.ToString();
-            var s = _parent.PagedView.SortDescriptions.Where(x => x.PropertyName == column).FirstOrDefault();
-
-            var direction = ComponentModel.ListSortDirection.Ascending;
-            if (s != null)
+            if (CanUserSort)
             {
-                direction = s.Direction == ComponentModel.ListSortDirection.Ascending ? ComponentModel.ListSortDirection.Descending : ComponentModel.ListSortDirection.Ascending;
-            }
+                DataGridColumnHeader header = sender as DataGridColumnHeader;
+                string column = header.Content.ToString();
+                var s = _parent.PagedView.SortDescriptions.Where(x => x.PropertyName == column).FirstOrDefault();
 
-            _parent.PagedView.SortDescriptions.Clear();
-            _parent.PagedView.SortDescriptions.Add(new PropertySortDescription(column, direction));
+                var direction = ComponentModel.ListSortDirection.Ascending;
+                if (s != null)
+                {
+                    direction = s.Direction == ComponentModel.ListSortDirection.Ascending ? ComponentModel.ListSortDirection.Descending : ComponentModel.ListSortDirection.Ascending;
+                }
+
+                _parent.PagedView.SortDescriptions.Clear();
+                _parent.PagedView.SortDescriptions.Add(new PropertySortDescription(column, direction));
+            }
         }
 
         internal DataGridColumnHeader GetHeader()
@@ -394,14 +467,14 @@ namespace Windows.UI.Xaml.Controls
         /// <returns>
         /// A new, read-only element that is bound to the column's <see cref="P:System.Windows.Controls.DataGridBoundColumn.Binding" /> property value.
         /// </returns>
-        protected abstract FrameworkElement GenerateElement(DataGridCell cell, object dataItem); 
+        protected abstract FrameworkElement GenerateElement(DataGridCell cell, object dataItem);
 
         internal FrameworkElement GenerateElementInternal(DataGridCell cell, object dataItem)
         {
             return GenerateElement(cell, dataItem);
         }
 
-        internal virtual void EnterEditionMode(DataGridCell dataGridCell) 
+        internal virtual void EnterEditionMode(DataGridCell dataGridCell)
         {
         }
 
