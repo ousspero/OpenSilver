@@ -277,8 +277,8 @@ namespace Windows.UI.Xaml.Data
                 int middle = ((max - min) / 2) + min;
 
                 object childValue = GetValue(childItems[middle], operation);
-
-                if ( (operation.Direction == ListSortDirection.Ascending ? 1 : -1) * x.CompareTo(childValue) > 0) // the ternaire operation allow to swith the comparation behaviour
+                
+                if (x!=null && (operation.Direction == ListSortDirection.Ascending ? 1 : -1) * x.CompareTo(childValue) > 0) // the ternaire operation allow to swith the comparation behaviour
                     return GetPosIndex_SimulatorOnly(operation, x, middle + 1, max, childItems); // +1 to fix the rounded int of middle
                 else
                     return GetPosIndex_SimulatorOnly(operation, x, min, middle, childItems);
@@ -339,7 +339,8 @@ namespace Windows.UI.Xaml.Data
         // Get the value of the property described in operation by reflection
         object GetValue(object obj, PropertySortDescription operation)
         {
-            return obj.GetType().GetProperty(operation.PropertyName).GetValue(obj, null);
+            var result = obj.GetType().GetProperty(operation.PropertyName);
+            return result.GetValue(obj, null);
         }
 
         // Get the value of the property described in operation by reflection

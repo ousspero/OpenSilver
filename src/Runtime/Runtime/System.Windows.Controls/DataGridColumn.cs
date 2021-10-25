@@ -401,7 +401,8 @@ namespace Windows.UI.Xaml.Controls
             if (CanUserSort)
             {
                 DataGridColumnHeader header = sender as DataGridColumnHeader;
-                string column = header.Content.ToString();
+                string column = header.Column.GetSortPropertyName();
+
                 var s = _parent.PagedView.SortDescriptions.Where(x => x.PropertyName == column).FirstOrDefault();
 
                 var direction = ComponentModel.ListSortDirection.Ascending;
