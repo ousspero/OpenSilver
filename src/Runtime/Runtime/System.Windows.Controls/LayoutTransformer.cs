@@ -223,6 +223,32 @@ namespace Windows.UI.Xaml.Controls
                     double angleRadians = (2 * Math.PI * angle) / 360;
                     double sine = Math.Sin(angleRadians);
                     double cosine = Math.Cos(angleRadians);
+                    double topMargin = Math.Round((this.Width) * Math.Sqrt(2) / 2);
+                    
+                    //calculate the overflow & add some margin 
+                    if (angle < 0)
+                    {
+                        if (-angle > 45 && -angle < 135)
+                        {
+                            this.Margin = new Thickness(this.Margin.Left+2, this.Margin.Top + topMargin, this.Margin.Right, this.Margin.Bottom);
+                        }
+                        else
+                        {
+                            this.Margin = new Thickness(this.Margin.Left+2, this.Margin.Top + topMargin / 2, this.Margin.Right, this.Margin.Bottom);
+                        }
+                    }
+                    else
+                    {
+                        if (angle > 45 && angle < 135)
+                        {
+                            this.Margin = new Thickness(this.Margin.Left, this.Margin.Top, this.Margin.Right, this.Margin.Bottom + topMargin);
+                        }
+                        else
+                        {
+                            this.Margin = new Thickness(this.Margin.Left, this.Margin.Top , this.Margin.Right, this.Margin.Bottom + topMargin / 2);
+                        }
+                    }
+
                     return new Matrix(cosine, sine, -sine, cosine, 0, 0);
                 }
 
