@@ -122,7 +122,8 @@ namespace Windows.UI.Xaml
 
             if (child._parent != null)
             {
-                throw new ArgumentException("Must disconnect specified child from current parent UIElement before attaching to new parent UIElement.");
+                this.INTERNAL_OnDetachedFromVisualTree();
+                //throw new ArgumentException("Must disconnect specified child from current parent UIElement before attaching to new parent UIElement.");
             }
 
             HasVisualChildren = true;
@@ -150,7 +151,7 @@ namespace Windows.UI.Xaml
 
             if (child._parent != this)
             {
-                throw new ArgumentException("Specified UIElement is not a child of this UIElement.");
+                //throw new ArgumentException("Specified UIElement is not a child of this UIElement.");
             }
 
             if (VisualChildrenCount == 0)

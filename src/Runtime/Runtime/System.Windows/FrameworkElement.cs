@@ -167,7 +167,8 @@ namespace Windows.UI.Xaml
             // Logical Parent must first be dropped before you are attached to a newParent
             if (Parent != null && newParent != null && Parent != newParent)
             {
-                throw new InvalidOperationException("Specified element is already the logical child of another element. Disconnect it first.");
+                this.INTERNAL_OnDetachedFromVisualTree();
+               // throw new InvalidOperationException("Specified element is already the logical child of another element. Disconnect it first.");
             }
 
             // Trivial check to avoid loops
