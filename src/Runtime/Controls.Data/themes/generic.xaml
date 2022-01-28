@@ -260,8 +260,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <!--<Rectangle Name="FocusVisual" Stroke="#FF6DBDD1" StrokeThickness="1" Fill="#66FFFFFF" HorizontalAlignment="Stretch" 
-                                   VerticalAlignment="Stretch" IsHitTestVisible="false" Opacity="0" />-->
+                        <!--
+                        <Rectangle Name="FocusVisual" Stroke="#FF6DBDD1" StrokeThickness="1" Fill="#66FFFFFF" HorizontalAlignment="Stretch" 
+                                   VerticalAlignment="Stretch" IsHitTestVisible="false" Opacity="0" />
+                        -->
 
                         <ContentPresenter
                             Content="{TemplateBinding Content}"
