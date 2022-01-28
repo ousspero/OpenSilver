@@ -171,7 +171,33 @@
                             </VisualStateGroup>
 
                             <VisualStateGroup x:Name="SelectionStates">
-                                <VisualState x:Name="Unselected" />
+                                <VisualState x:Name="Unselected" >
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="SelectedVisualElement"
+                                                        Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                        Duration="0"
+                                                        To="Transparent">
+                                        </ColorAnimation>
+                                        <ColorAnimation Storyboard.TargetName="SelectedVisualElement"
+                                                        Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                        Duration="0"
+                                                        To="Transparent">
+                                        </ColorAnimation>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="FocusVisualElement"
+                                                                       Storyboard.TargetProperty="Visibility"
+                                                                       Duration="0">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <Visibility>Collapsed</Visibility>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation Storyboard.TargetName="MouseOverVisualElement"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         Duration="0"
+                                                         To="0" />
+                                    </Storyboard>
+                                </VisualState>
                                 <VisualState x:Name="Selected">
                                     <Storyboard>
                                         <ColorAnimation Storyboard.TargetName="SelectedVisualElement"
@@ -204,6 +230,8 @@
                                 </VisualState>
 
                                 <VisualState x:Name="Unfocused" />
+
+
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
                         <Border x:Name="MouseOverVisualElement"
