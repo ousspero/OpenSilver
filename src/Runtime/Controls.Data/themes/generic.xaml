@@ -240,7 +240,7 @@
                                 <vsm:VisualState x:Name="Regular" />
                                 <vsm:VisualState x:Name="Current">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="FocusVisual" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                        <DoubleAnimation Storyboard.TargetName="FocusVisual" Storyboard.TargetProperty="Opacity" To="0" Duration="0" />
                                     </Storyboard>
                                 </vsm:VisualState>
                             </vsm:VisualStateGroup>
