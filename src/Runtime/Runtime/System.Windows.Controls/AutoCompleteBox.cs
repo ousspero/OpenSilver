@@ -47,6 +47,7 @@ namespace Windows.UI.Xaml.Controls
 
         private AutoCompleteFilterMode _filterMode; // filter mode
         private AutoCompleteFilterPredicate<object> _filter; // currently selected filter
+        private AutoCompleteFilterPredicate<object> _itemFilter; // filter used when mode is set to Custom.
 
         private bool _updatingTextOnSelection;
 
@@ -418,36 +419,25 @@ namespace Windows.UI.Xaml.Controls
         }
 
         /// <summary>
-        /// Identifies the <see cref="ItemFilter"/> dependency property.
-        /// </summary>
-        public static readonly DependencyProperty ItemFilterProperty = 
-            DependencyProperty.Register(
-                nameof(ItemFilter), 
-                typeof(AutoCompleteFilterPredicate<object>), 
-                typeof(AutoCompleteBox),
-                new PropertyMetadata(OnItemFilterPropertyChanged));
-
-        /// <summary>
         /// The custom method that uses the user-entered text to filter the items specified by the ItemsSource property.
         /// </summary>
         public AutoCompleteFilterPredicate<object> ItemFilter
         {
-            get { return (AutoCompleteFilterPredicate<object>)GetValue(ItemFilterProperty); }
-            set { SetValue(ItemFilterProperty, value); }
-        }
-
-        private static void OnItemFilterPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            AutoCompleteBox source = (AutoCompleteBox)d;
-            AutoCompleteFilterPredicate<object> value = (AutoCompleteFilterPredicate<object>)e.NewValue;
-
-            if (value == null)
+            get { return _itemFilter; }
+            set
             {
-                source.FilterMode = AutoCompleteFilterMode.None;
-            }
-            else
-            {
-                source.FilterMode = AutoCompleteFilterMode.Custom;
+                if (_itemFilter != value)
+                {
+                    _itemFilter = value;
+                    if (value != null)
+                    {
+                        FilterMode = AutoCompleteFilterMode.Custom;
+                    }
+                    else
+                    {
+                        FilterMode = AutoCompleteFilterMode.None;
+                    }
+                }
             }
         }
 
@@ -671,7 +661,7 @@ namespace Windows.UI.Xaml.Controls
         {
             if (item != null && search != null)
             {
-                return this.ItemFilter(search, item);
+                return this._itemFilter(search, item);
             }
             else
             {
@@ -688,11 +678,9 @@ namespace Windows.UI.Xaml.Controls
             ComboBoxItem container = element as ComboBoxItem;
             if (container != null)
             {
-#if MIGRATION
-                container.AddHandler(MouseLeftButtonDownEvent, new MouseButtonEventHandler(ComboBoxItem_Click), true);
-#else
-                container.AddHandler(PointerPressedEvent, new PointerEventHandler(ComboBoxItem_Click), true);
-#endif
+                container.INTERNAL_CorrespondingItem = item;
+                container.INTERNAL_ParentSelectorControl = this;
+                container.Click += ComboBoxItem_Click;
             }
         }
 
@@ -703,11 +691,9 @@ namespace Windows.UI.Xaml.Controls
             ComboBoxItem container = element as ComboBoxItem;
             if (container != null)
             {
-#if MIGRATION
-                container.RemoveHandler(MouseLeftButtonDownEvent, new MouseButtonEventHandler(ComboBoxItem_Click));
-#else
-                container.RemoveHandler(PointerPressedEvent, new PointerEventHandler(ComboBoxItem_Click));
-#endif
+                container.INTERNAL_CorrespondingItem = null;
+                container.INTERNAL_ParentSelectorControl = null;
+                container.Click -= ComboBoxItem_Click;
             }
         }
 
@@ -721,18 +707,20 @@ namespace Windows.UI.Xaml.Controls
             return (item is ComboBoxItem);
         }
 
-        [Obsolete]
         protected override SelectorItem INTERNAL_GenerateContainer(object item)
         {
             return (SelectorItem)this.GetContainerFromItem(item);
         }
 
-        [Obsolete]
         protected override DependencyObject GetContainerFromItem(object item)
         {
             ComboBoxItem comboBoxItem = item as ComboBoxItem ?? new ComboBoxItem();
+            comboBoxItem.INTERNAL_CorrespondingItem = item;
+            comboBoxItem.INTERNAL_ParentSelectorControl = this;
+            comboBoxItem.Click += ComboBoxItem_Click;
             return comboBoxItem;
         }
+
 
         void ComboBoxItem_Click(object sender, RoutedEventArgs e)
         {
@@ -750,12 +738,41 @@ namespace Windows.UI.Xaml.Controls
             }
 
             // Select the item:
-            this.SelectedItem = ItemContainerGenerator.ItemFromContainer(selectedContainer);
+            this.SelectedItem = selectedContainer.INTERNAL_CorrespondingItem;
 
             // Close the popup:
             if (_dropDownToggle != null)
                 _dropDownToggle.IsChecked = false; // Note: this has other effects as well: see the "IsDropDownOpen_Changed" method.
         }
+
+        protected override void ApplySelectedIndex(int index)
+        {
+            base.ApplySelectedIndex(index);
+
+            if (!this.HasItems)
+            {
+                return;
+            }
+
+            UIElement newSelectedContent;
+
+            if (index == -1)
+            {
+                // index is sometimes at -1, for exemple when the app is starting
+                // not en exception but we don't want to treat it as there is no item
+                newSelectedContent = null;
+            }
+            else if (index < this.Items.Count)
+            {
+                ComboBoxItem container = this.ItemContainerGenerator.ContainerFromIndex(index) as ComboBoxItem;
+                newSelectedContent = container;
+            }
+            else
+            {
+                throw new IndexOutOfRangeException();
+            }
+        }
+
 
 #if MIGRATION
         void TextBox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -830,7 +847,7 @@ namespace Windows.UI.Xaml.Controls
                                         typeof(AutoCompleteBox), 
                                         new PropertyMetadata(200d));
 
-#region event
+        #region event
 
         /// <summary>
         /// Occurs when the text in the text box portion of the AutoCompleteBox changes.
@@ -854,18 +871,7 @@ namespace Windows.UI.Xaml.Controls
 #else
         public event RoutedEventHandler DropDownOpened;
 #endif
-
-        /// <summary>
-        /// Occurs when the drop-down portion of the ComboBox is closing.
-        /// </summary>
-        [OpenSilver.NotImplemented]
-#if MIGRATION
-        public event RoutedPropertyChangingEventHandler<bool> DropDownClosing;
-#else
-        public event RoutedEventHandler DropDownClosing;
-#endif
-
-#endregion
+        #endregion
     }
 
     /// <summary>

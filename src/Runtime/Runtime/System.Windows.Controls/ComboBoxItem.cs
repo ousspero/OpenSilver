@@ -31,64 +31,93 @@ namespace Windows.UI.Xaml.Controls
     /// <summary>
     /// Represents the container for an item in a ListBox control.
     /// </summary>
-    public partial class ComboBoxItem : ListBoxItem
+    public partial class ComboBoxItem : SelectorItem
     {
         public ComboBoxItem()
         {
             this.DefaultStyleKey = typeof(ComboBoxItem);
+            //this.Loaded += (sender, e) =>
+            //{
+            //    UpdateVisualStates();
+            //};
         }
 
 #if MIGRATION
-        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
-        {
-            e.Handled = true;
-
-            base.OnMouseLeftButtonDown(e);
-        }
+        public override void OnApplyTemplate()
 #else
-        protected override void OnPointerPressed(PointerRoutedEventArgs e)
-        {
-            e.Handled = true;
-
-            base.OnPointerPressed(e);
-        }
+        protected override void OnApplyTemplate()
 #endif
+        {
+            base.OnApplyTemplate();
+            this.UpdateVisualStates();
+        }
+
+        protected internal override void HandleIsSelectedChanged(bool oldValue, bool newValue)
+        {
+            UpdateVisualStates();
+        }
 
 #if MIGRATION
-        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
-        {
-            e.Handled = true;
-
-            ComboBox parent = ParentComboBox;
-
-            if (parent != null)
-            {
-                parent.NotifyComboBoxItemMouseUp(this);
-            }
-
-            base.OnMouseLeftButtonUp(e);
-        }
+        protected override void OnMouseEnter(MouseEventArgs eventArgs)
 #else
-        protected override void OnPointerReleased(PointerRoutedEventArgs e)
+        protected override void OnPointerEntered(PointerRoutedEventArgs eventArgs)
+#endif
         {
-            e.Handled = true;
+#if MIGRATION
+            base.OnMouseEnter(eventArgs);
+#else
+            base.OnPointerEntered(eventArgs);
+#endif
+            this.INTERNAL_ParentSelectorControl.NotifyItemMouseEnter(this);
+            this.IsMouseOver = true;
+            this.UpdateVisualStates();
+        }
 
-            ComboBox parent = ParentComboBox;
+#if MIGRATION
+        protected internal override void OnMouseLeave(MouseEventArgs eventArgs)
+#else
+        protected internal override void OnPointerExited(PointerRoutedEventArgs eventArgs)
+#endif
+        {
+#if MIGRATION
+            base.OnMouseLeave(eventArgs);
+#else
+            base.OnPointerExited(eventArgs);
+#endif
+            this.IsMouseOver = false;
+            this.UpdateVisualStates();
+        }
 
-            if (parent != null)
+        internal override void UpdateVisualStates()
+        {
+            if (!IsEnabled)
             {
-                parent.NotifyComboBoxItemMouseUp(this);
+                GoToState(VisualStates.StateDisabled);
+            }
+            else if (IsMouseOver)
+            {
+                GoToState(VisualStates.StateMouseOver);
+            }
+            else
+            {
+                GoToState(VisualStates.StateNormal);
             }
 
-            base.OnPointerReleased(e);
-        }
-#endif
-
-        internal ComboBox ParentComboBox
-        {
-            get 
-            { 
-                return ParentSelector as ComboBox; 
+            if (IsSelected)
+            {
+                GoToState(VisualStates.StateSelected);
+            }
+            else
+            {
+                GoToState(VisualStates.StateUnselected);
+            }
+            if (IsFocused)
+            {
+                GoToState(VisualStates.StateFocused);
+            }
+            else
+            {
+                GoToState(VisualStates.StateUnfocused);
             }
         }
     }
