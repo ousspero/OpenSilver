@@ -967,7 +967,7 @@
         </Setter>
     </Style>
 
-    <!--  LayoutTransformer  -->
+      <!--LayoutTransformer-->  
     <Style TargetType="LayoutTransformer">
         <Setter Property="Foreground" Value="#FF000000" />
         <Setter Property="Template">

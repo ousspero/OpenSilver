@@ -13,7 +13,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 
 #if MIGRATION
 namespace System.Windows.Controls
@@ -60,21 +59,6 @@ namespace Windows.UI.Xaml.Controls
 
             _addedItems = new object[addedItems.Count];
             addedItems.CopyTo(_addedItems, 0);
-        }
-
-        internal SelectionChangedEventArgs(List<ItemsControl.ItemInfo> unselectedInfos, List<ItemsControl.ItemInfo> selectedInfos)
-        {
-            _removedItems = new object[unselectedInfos.Count];
-            for (int i = 0; i < unselectedInfos.Count; ++i)
-            {
-                _removedItems[i] = unselectedInfos[i].Item;
-            }
-
-            _addedItems = new object[selectedInfos.Count];
-            for (int i = 0; i < selectedInfos.Count; ++i)
-            {
-                _addedItems[i] = selectedInfos[i].Item;
-            }
         }
 
         /// <summary>
