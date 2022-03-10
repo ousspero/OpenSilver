@@ -234,7 +234,12 @@ namespace Windows.UI.Xaml.Controls
                 var newDate = e.NewValue as DateTime?;
                 datePicker.INTERNAL_SelectedDate = newDate;
 
-                if (newDate == null)
+                if (!newDate.HasValue)
+                {
+                    // Clean DataPickerTextBox before setting watermark text
+                    if (datePicker._textBox != null)
+                        datePicker._textBox.Text = string.Empty;
+
                     datePicker.SetWaterMarkText();
             }
         }
