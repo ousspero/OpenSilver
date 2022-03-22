@@ -47,49 +47,9 @@ namespace Windows.UI.Xaml
     /// </summary>
     public abstract partial class UIElement : DependencyObject
     {
-        static UIElement()
-        {
-#if MIGRATION
-            MouseMoveEvent = new RoutedEvent(nameof(MouseMove), RoutingStrategy.Bubble, typeof(MouseEventHandler), typeof(UIElement));
-            MouseLeftButtonDownEvent = new RoutedEvent(nameof(MouseLeftButtonDown), RoutingStrategy.Bubble, typeof(MouseButtonEventHandler), typeof(UIElement));
-            MouseRightButtonDownEvent = new RoutedEvent(nameof(MouseRightButtonDown), RoutingStrategy.Bubble, typeof(MouseButtonEventHandler), typeof(UIElement));
-            MouseWheelEvent = new RoutedEvent(nameof(MouseWheel), RoutingStrategy.Bubble, typeof(MouseWheelEventHandler), typeof(UIElement));
-            MouseLeftButtonUpEvent = new RoutedEvent(nameof(MouseLeftButtonUp), RoutingStrategy.Bubble, typeof(MouseButtonEventHandler), typeof(UIElement));
-            MouseEnterEvent = new RoutedEvent(nameof(MouseEnter), RoutingStrategy.Direct, typeof(MouseEventHandler), typeof(UIElement));
-            MouseLeaveEvent = new RoutedEvent(nameof(MouseLeave), RoutingStrategy.Direct, typeof(MouseEventHandler), typeof(UIElement));
-            TextInputEvent = new RoutedEvent(nameof(TextInput), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TextInputStartEvent = new RoutedEvent(nameof(TextInputStart), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TextInputUpdateEvent = new RoutedEvent(nameof(TextInputUpdate), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TappedEvent = new RoutedEvent(nameof(Tapped), RoutingStrategy.Bubble, typeof(TappedEventHandler), typeof(UIElement));
-            MouseRightButtonUpEvent = new RoutedEvent(nameof(MouseRightButtonUp), RoutingStrategy.Bubble, typeof(MouseButtonEventHandler), typeof(UIElement));
-            KeyDownEvent = new RoutedEvent(nameof(KeyDown), RoutingStrategy.Bubble, typeof(KeyEventHandler), typeof(UIElement));
-            KeyUpEvent = new RoutedEvent(nameof(KeyUp), RoutingStrategy.Bubble, typeof(KeyEventHandler), typeof(UIElement));
-            GotFocusEvent = new RoutedEvent(nameof(GotFocus), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(UIElement));
-            LostFocusEvent = new RoutedEvent(nameof(LostFocus), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(UIElement));
-#else
-            PointerMovedEvent = new RoutedEvent(nameof(PointerMoved), RoutingStrategy.Bubble, typeof(PointerEventHandler), typeof(UIElement));
-            PointerPressedEvent = new RoutedEvent(nameof(PointerPressed), RoutingStrategy.Bubble, typeof(PointerEventHandler), typeof(UIElement));
-            PointerWheelChangedEvent = new RoutedEvent(nameof(PointerWheelChanged), RoutingStrategy.Bubble, typeof(PointerEventHandler), typeof(UIElement));
-            PointerReleasedEvent = new RoutedEvent(nameof(PointerReleased), RoutingStrategy.Bubble, typeof(PointerEventHandler), typeof(UIElement));
-            PointerEnteredEvent = new RoutedEvent(nameof(PointerEntered), RoutingStrategy.Direct, typeof(PointerEventHandler), typeof(UIElement));
-            PointerExitedEvent = new RoutedEvent(nameof(PointerExited), RoutingStrategy.Direct, typeof(PointerEventHandler), typeof(UIElement));
-            TextInputEvent = new RoutedEvent(nameof(TextInput), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TextInputStartEvent = new RoutedEvent(nameof(TextInputStart), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TextInputUpdateEvent = new RoutedEvent(nameof(TextInputUpdate), RoutingStrategy.Bubble, typeof(TextCompositionEventHandler), typeof(UIElement));
-            TappedEvent = new RoutedEvent(nameof(Tapped), RoutingStrategy.Bubble, typeof(TappedEventHandler), typeof(UIElement));
-            RightTappedEvent = new RoutedEvent(nameof(RightTapped), RoutingStrategy.Bubble, typeof(RightTappedEventHandler), typeof(UIElement));
-            KeyDownEvent = new RoutedEvent(nameof(KeyDown), RoutingStrategy.Bubble, typeof(KeyEventHandler), typeof(UIElement));
-            KeyUpEvent = new RoutedEvent(nameof(KeyUp), RoutingStrategy.Bubble, typeof(KeyEventHandler), typeof(UIElement));
-            GotFocusEvent = new RoutedEvent(nameof(GotFocus), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(UIElement));
-            LostFocusEvent = new RoutedEvent(nameof(LostFocus), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(UIElement));
-#endif
-
-            RegisterEvents(typeof(UIElement));
-        }
-
         internal bool IsConnectedToLiveTree { get; set; }
 
-#region Visual Parent
+        #region Visual Parent
 
         private DependencyObject _parent;
 
@@ -104,9 +64,9 @@ namespace Windows.UI.Xaml
             }
         }
 
-#endregion Visual Parent
+        #endregion Visual Parent
 
-#region Visual Children
+        #region Visual Children
 
         /// <summary>
         /// Derived class must implement to support UIElement children. The method must return
@@ -162,7 +122,8 @@ namespace Windows.UI.Xaml
 
             if (child._parent != null)
             {
-                throw new ArgumentException("Must disconnect specified child from current parent UIElement before attaching to new parent UIElement.");
+                this.INTERNAL_OnDetachedFromVisualTree();
+                //throw new ArgumentException("Must disconnect specified child from current parent UIElement before attaching to new parent UIElement.");
             }
 
             HasVisualChildren = true;
@@ -190,7 +151,7 @@ namespace Windows.UI.Xaml
 
             if (child._parent != this)
             {
-                throw new ArgumentException("Specified UIElement is not a child of this UIElement.");
+                //throw new ArgumentException("Specified UIElement is not a child of this UIElement.");
             }
 
             if (VisualChildrenCount == 0)
@@ -225,7 +186,7 @@ namespace Windows.UI.Xaml
             }
         }
 
-#endregion Visual Children
+        #endregion Visual Children
 
         internal virtual Size MeasureCore()
         {
@@ -244,12 +205,21 @@ namespace Windows.UI.Xaml
         internal object INTERNAL_InnerDomElement { get; set; } // This is used to add visual children to the DOM (optionally wrapped into additional code, c.f. "INTERNAL_VisualChildInformation")
         internal object INTERNAL_AdditionalOutsideDivForMargins { get; set; } // This is used to define the margins and to remove the div used for the margins when we remove this element.
         internal object INTERNAL_InnerDivOfTheChildWrapperOfTheParentIfAny { get; set; } // This is non-null only if the parent has a "ChildWrapper", that is, a DIV that it creates for each of its children. If it is the case, we store the "inner div" of that child wrapper. It is useful for alignment purposes (cf. alignment methods in the FrameworkElement class).
+        internal
+#if CSHTML5NETSTANDARD //todo: after testing with JSIL, make it "object" in all cases.
+            object
+#else
+            dynamic
+#endif
+            INTERNAL_OptionalSpecifyDomElementConcernedByFocus
+        { get; set; } // This is optional. When set, it means that the "GotFocus", "LostFocus", "KeyDown", "KeyUp", etc. events of the specified DOM element are used instead of the those of the outer DOM element. An example is the "TextBox", which has many DIVs but we only listen to the inner DIV for the focus and key events. Similarly, setting the focus on the control will call the JS method "focus()" on this DOM element if any.
         internal object INTERNAL_OptionalSpecifyDomElementConcernedByIsEnabled { get; set; } // This is optional. When set, it means that the "FrameworkElement.ManageIsEnabled" method sets the "disabled" property on this specified DOM element rather than on the INTERNAL_OuterDomElement. An example is the "CheckBox", which specifies a different DOM element for its "disabled" state.
         internal object INTERNAL_OptionalSpecifyDomElementConcernedByMinMaxHeightAndWidth { get; set; } // This is optional. When set, it means that the "FrameworkElement.MinHeight" and "MinWidth" properties are applied on this specified DOM element rather than on the INTERNAL_OuterDomElement. An example is the "TextBox", for which applying MinHeight to the outer DOM does not make the inner DOM bigger.
         internal INTERNAL_CellDefinition INTERNAL_SpanParentCell = null; //this is used to know where we put the element when in a cell of a grid that is overlapped (due to the span or presence of another element that was put there previously), which causes it to be "sucked" into the basic cell of the previousl "placed" child.
         internal string INTERNAL_HtmlRepresentation { get; set; } // This can be used instead of overriding the "CreateDomElement" method to specify the appearance of the control.
         internal Dictionary<UIElement, INTERNAL_VisualChildInformation> INTERNAL_VisualChildrenInformation { get; set; } //todo-performance: verify that JavaScript output is a performant dictionary too, otherwise change structure.
         internal bool INTERNAL_RenderTransformOriginHasBeenApplied = false; // This is useful to ensure that the default RenderTransformOrigin is (0,0) like in normal XAML, instead of (0.5,0.5) like in CSS.
+        internal ToolTip INTERNAL_AssignedToolTip;
         internal Popup INTERNAL_ValidationErrorPopup;
         //Note: the two following fields are only used in the PointerRoutedEventArgs class to determine how many clicks have been made on this UIElement in a short amount of time.
         internal int INTERNAL_clickCount; //this is used in the PointerPressed event to fill the ClickCount Property.
@@ -960,9 +930,9 @@ namespace Windows.UI.Xaml
             }
         }
 
-#endregion
+        #endregion
 
-#region pointer-events
+        #region pointer-events
 
         internal static bool EnablePointerEventsBase(UIElement uie)
         {
@@ -990,7 +960,7 @@ namespace Windows.UI.Xaml
             }
         }
 
-#endregion pointer-events
+        #endregion pointer-events
 
         internal static void SetPointerEvents(UIElement element)
         {
@@ -1416,14 +1386,14 @@ document.ondblclick = null;
             }
             //#endif
 
-            return new MatrixTransform(new Matrix(1, 0, 0, 1, offsetLeft, offsetTop));
+            return new TranslateTransform() { X = offsetLeft, Y = offsetTop };
         }
 
         //internal virtual void INTERNAL_Render()
         //{
         //}
 
-#region ForceInherit property support
+        #region ForceInherit property support
 
         internal static void SynchronizeForceInheritProperties(UIElement uiE, DependencyObject parent)
         {
@@ -1459,7 +1429,7 @@ document.ondblclick = null;
             }
         }
 
-#endregion ForceInherit property support
+        #endregion ForceInherit property support
 
         internal bool MeasureDirty
         {
@@ -1645,26 +1615,23 @@ document.ondblclick = null;
                 {
                     DesiredSize = new Size();
                     previousDesiredSize = Size.Empty;
-                    return;
                 }
                 else if (previousMeasureValid && savedPreviousAvailableSize.IsClose(availableSize) && previousDesiredSize != Size.Empty)
                 {
-                    if (LayoutManager.Current.CheckChildMeasureValidation(this) == false)
-                    {
-                        DesiredSize = previousDesiredSize;
-                        return;
-                    }
+                    DesiredSize = previousDesiredSize;
                 }
-
-                Size previousDesiredSizeInMeasure = this.DesiredSize;
-                DesiredSize = MeasureCore(availableSize);
-                if (previousDesiredSizeInMeasure != DesiredSize)
+                else
                 {
-                    this.InvalidateArrange();
-                }
+                    Size previousDesiredSizeInMeasure = this.DesiredSize;
+                    DesiredSize = MeasureCore(availableSize);
+                    if (previousDesiredSizeInMeasure != DesiredSize)
+                    {
+                        this.InvalidateArrange();
+                    }
 
-                PreviousAvailableSize = availableSize;
-                previousDesiredSize = DesiredSize;
+                    PreviousAvailableSize = availableSize;
+                    previousDesiredSize = DesiredSize;
+                }
             }
         }
 
@@ -1682,24 +1649,12 @@ document.ondblclick = null;
 
         internal void InvalidateParentMeasure()
         {
-            UIElement parent = VisualTreeHelper.GetParent(this) as UIElement;
-            if (parent is GridNotLogical)
-            {
-                parent.InvalidateParentMeasure();
-                return;
-            }
-            parent?.InvalidateMeasure();
+            (VisualTreeHelper.GetParent(this) as UIElement)?.InvalidateMeasure();
         }
 
         internal void InvalidateParentArrange()
         {
-            UIElement parent = VisualTreeHelper.GetParent(this) as UIElement;
-            if (parent is GridNotLogical)
-            {
-                parent.InvalidateParentArrange();
-                return;
-            }
-            parent?.InvalidateArrange();
+            (VisualTreeHelper.GetParent(this) as UIElement)?.InvalidateArrange();
         }
         
         public void InvalidateMeasure()

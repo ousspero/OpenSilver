@@ -110,16 +110,6 @@ document.refreshKeyModifiers = function (evt) {
     document.modifiersPressed = value;
 }
 
-_opensilver = {
-    mousePositionX: 0.0,
-    mousePositionY: 0.0
-};
-
-document.addEventListener('mousemove', function (e) {
-    _opensilver.mousePositionX = e.pageX;
-    _opensilver.mousePositionY = e.pageY;
-});
-
 document.onkeydown = function (evt) {
     evt = evt || window.event;
     document.refreshKeyModifiers(evt);
@@ -190,20 +180,6 @@ document.getElementByIdSafe = function (id) {
         document.interopErrors[id]++;
     }
     return element;
-}
-
-document.enableFocus = function (id) {
-    const element = document.getElementById(id);
-    if (!element) return;
-    element.onfocus = null;
-}
-
-document.disableFocus = function (id) {
-    const element = document.getElementById(id);
-    if (!element) return;
-    element.onfocus = function (e) {
-        e.target.blur();
-    };
 }
 
 document.setGridCollapsedDuetoHiddenColumn = function (id) {
@@ -327,58 +303,6 @@ document.addEventListenerSafe = function (element, method, func) {
             element.addEventListener(method, func);
         }
     }
-}
-
-document._attachEventListeners = function (element, handler) {
-    const view = typeof element === 'string' ? document.getElementById(element) : element;
-    if (!view || view._eventsStore) return;
-
-    function bubblingEventHandler(e) {
-        if (!e.isHandled) {
-            e.isHandled = true;
-            handler(e);
-        }
-    }
-
-    const store = view._eventsStore = {};
-
-    view.addEventListener('mousedown', store['mousedown'] = bubblingEventHandler);
-    view.addEventListener('touchstart', store['touchstart'] = bubblingEventHandler, { passive: true });
-    view.addEventListener('mouseup', store['mouseup'] = bubblingEventHandler);
-    view.addEventListener('touchend', store['touchend'] = bubblingEventHandler);
-    view.addEventListener('mousemove', store['mousemove'] = bubblingEventHandler);
-    view.addEventListener('touchmove', store['touchmove'] = bubblingEventHandler, { passive: true });
-    view.addEventListener('wheel', store['wheel'] = bubblingEventHandler, { passive: true });
-    view.addEventListener('mouseenter', store['mouseenter'] = handler);
-    view.addEventListener('mouseleave', store['mouseleave'] = handler);
-    view.addEventListener('input', store['input'] = bubblingEventHandler);
-    view.addEventListener('keydown', store['keydown'] = bubblingEventHandler);
-    view.addEventListener('keyup', store['keyup'] = bubblingEventHandler);
-    view.addEventListener('focusin', store['focusin'] = bubblingEventHandler);
-    view.addEventListener('focusout', store['focusout'] = bubblingEventHandler);
-}
-
-document._removeEventListeners = function (element) {
-    const view = typeof element === 'string' ? document.getElementById(element) : element;
-    if (!view || !view._eventsStore) return;
-
-    const store = view._eventsStore;
-    view.removeEventListener('mousedown', store['mousedown']);
-    view.removeEventListener('touchstart', store['touchstart']);
-    view.removeEventListener('mouseup', store['mouseup']);
-    view.removeEventListener('touchend', store['touchend']);
-    view.removeEventListener('mousemove', store['mousemove']);
-    view.removeEventListener('touchmove', store['touchmove']);
-    view.removeEventListener('wheel', store['wheel']);
-    view.removeEventListener('mouseenter', store['mouseenter']);
-    view.removeEventListener('mouseleave', store['mouseleave']);
-    view.removeEventListener('input', store['input']);
-    view.removeEventListener('keydown', store['keydown']);
-    view.removeEventListener('keyup', store['keyup']);
-    view.removeEventListener('focusin', store['focusin']);
-    view.removeEventListener('focusout', store['focusout']);
-
-    delete view._eventsStore;
 }
 
 document.eventCallback = function (callbackId, arguments, sync) {
@@ -530,23 +454,32 @@ document.setPosition = function(id, left, top, bSetAbsolutePosition, bSetZeroMar
     }
 }
 
-document.measureTextBlock = function(uid, text, textWrapping, padding, width, maxWidth) {
+document.measureTextBlock = function(text, fontSize, fontFamily, fontStyle, fontWeight, textWrapping, padding, width, maxWidth) {
     var element = document.measureTextBlockElement;
-	var elToMeasure = document.getElementById(uid);
-    if (element && elToMeasure)
+    if (element)
     {
-		var computedStyle = getComputedStyle(elToMeasure);
-
         var runElement = element.firstElementChild;
         if (runElement != null) {
             runElement.innerText = text;
+            runElement.style.fontSize = fontSize;
+            runElement.style.fontWeight = fontWeight;
         }
 
-        element.style.fontSize = computedStyle.fontSize;
-        element.style.fontWeight = computedStyle.fontWeight;
-        element.style.fontFamily = computedStyle.fontFamily;
-		element.style.fontStyle = computedStyle.fontStyle;
-
+        if (fontSize.length > 0) {
+            element.style.fontSize = fontSize;
+        }
+        if (fontFamily.length > 0) {
+            if (fontFamily === "-") {
+                fontFamily = "";
+            }
+            element.style.fontFamily = fontFamily;
+        }
+        if (fontStyle.length > 0) {
+            element.style.fontStyle = fontStyle;
+        }
+        if (fontWeight.length > 0) {
+            element.style.fontWeight = fontWeight;
+        }
         if (textWrapping.length > 0) {
             element.style.whiteSpace = textWrapping;
         }
